@@ -1,38 +1,53 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import NewsNavbar from "./components/Navbar/NewsNavbar";
 import Category from "./pages/Category";
 import NewsDetail from "./pages/NewsDetail";
 import Home from "./pages/Home";
-// import Search from "./components/Search";
-// import Trending from "./components/Trending";
 import Profile from "./pages/Profile";
+import Login from "./pages/auth/Login";
+import Register from "./pages/auth/Register";
 
 function App() {
+  // Fungsi untuk mengecek apakah user sudah login
+  const isAuthenticated = () => {
+    return localStorage.getItem("token") !== null;
+  };
+
+  // Protected Route Component
+  const ProtectedRoute = ({ children }) => {
+    if (!isAuthenticated()) {
+      return <Navigate to="/login" replace />;
+    }
+    return children;
+  };
+
   return (
     <Router>
       <div className="App">
         <NewsNavbar />
         <Routes>
-          {/* Home Route */}
+          {/* Public Routes */}
           <Route path="/" element={<Home />} />
-
-          {/* Category Routes */}
           <Route path="/category/:slug" element={<Category />} />
-
-          {/* News Detail Route */}
           <Route path="/news/detail" element={<NewsDetail />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
 
-          {/* Search Route */}
-          {/* <Route path="/search" element={<Search />} /> */}
-
-          {/* Trending Route */}
-          {/* <Route path="/trending" element={<Trending />} /> */}
-
-          {/* Profile Routes */}
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/settings" element={<div>Settings Page</div>} />
-          <Route path="/bookmarks" element={<div>Bookmarks Page</div>} />
+          {/* Protected Routes */}
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
 
           {/* 404 Route */}
           <Route path="*" element={<NotFound />} />
@@ -42,7 +57,6 @@ function App() {
   );
 }
 
-// 404 Component
 function NotFound() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">

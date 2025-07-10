@@ -10,6 +10,7 @@ import {
   DialogBody,
   DialogFooter,
   Textarea,
+  Avatar,
 } from "@material-tailwind/react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -19,7 +20,7 @@ const Profile = () => {
     displayName: "",
     email: "",
     bio: "",
-    avatar: "",
+    photoUrl: "",
   });
   const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -32,12 +33,10 @@ const Profile = () => {
     confirmPassword: "",
   });
   const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [avatarFile, setAvatarFile] = useState(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchUserProfile();
-  }, []);
-
+  // Fetch user profile
   const fetchUserProfile = async () => {
     try {
       setLoading(true);
@@ -49,53 +48,84 @@ const Profile = () => {
       setUserData(response.data);
       setLoading(false);
     } catch (err) {
-      setError("Gagal memuat profil. Silakan coba lagi.");
-      setLoading(false);
-      if (err.response?.status === 401) {
-        navigate("/login");
-      }
+      handleApiError(err, "Gagal memuat profil");
+      if (err.response?.status === 401) navigate("/login");
     }
   };
 
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
+
+  // Handle API errors consistently
+  const handleApiError = (error, defaultMessage) => {
+    setError(error.response?.data?.message || defaultMessage);
+    setTimeout(() => setError(""), 3000);
+  };
+
+  // Handle input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setUserData({ ...userData, [name]: value });
+    setUserData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Handle password changes
   const handlePasswordChange = (e) => {
     const { name, value } = e.target;
-    setPasswordData({ ...passwordData, [name]: value });
+    setPasswordData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Handle avatar file selection
+  const handleAvatarChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setAvatarFile(e.target.files[0]);
+    }
+  };
+
+  // Submit profile updates
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.patch(
-        "/api/auth/profile",
-        {
-          displayName: userData.displayName,
-          bio: userData.bio,
+      const formData = new FormData();
+      formData.append("displayName", userData.displayName);
+      formData.append("bio", userData.bio);
+      if (avatarFile) {
+        formData.append("photo", avatarFile);
+      }
+
+      const response = await axios.patch("/api/auth/profile", formData, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Content-Type": "multipart/form-data",
         },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
+      });
+
       setUserData(response.data);
       setEditMode(false);
+      setAvatarFile(null);
       setSuccess("Profil berhasil diperbarui!");
       setTimeout(() => setSuccess(""), 3000);
+
+      // Update local storage
+      const user = JSON.parse(localStorage.getItem("user"));
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          ...user,
+          displayName: response.data.displayName,
+          photoUrl: response.data.photoUrl,
+        })
+      );
     } catch (err) {
-      setError("Gagal memperbarui profil. Silakan coba lagi.");
-      setTimeout(() => setError(""), 3000);
+      handleApiError(err, "Gagal memperbarui profil");
     }
   };
 
+  // Change password
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setError("Password baru dan konfirmasi password tidak cocok");
+      setError("Password baru dan konfirmasi tidak cocok");
       setTimeout(() => setError(""), 3000);
       return;
     }
@@ -113,6 +143,7 @@ const Profile = () => {
           },
         }
       );
+
       setSuccess("Password berhasil diubah!");
       setPasswordData({
         currentPassword: "",
@@ -122,14 +153,11 @@ const Profile = () => {
       setShowPasswordForm(false);
       setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          "Gagal mengubah password. Silakan coba lagi."
-      );
-      setTimeout(() => setError(""), 3000);
+      handleApiError(err, "Gagal mengubah password");
     }
   };
 
+  // Delete account
   const handleDeleteAccount = async () => {
     try {
       await axios.delete("/api/auth/account", {
@@ -137,14 +165,18 @@ const Profile = () => {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
+
+      // Clear user data
       localStorage.removeItem("token");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("user");
       navigate("/");
     } catch (err) {
-      setError("Gagal menghapus akun. Silakan coba lagi.");
-      setTimeout(() => setError(""), 3000);
+      handleApiError(err, "Gagal menghapus akun");
     }
   };
 
+  // Handle logout
   const handleLogout = async () => {
     try {
       await axios.post(
@@ -156,11 +188,13 @@ const Profile = () => {
           },
         }
       );
+
       localStorage.removeItem("token");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("user");
       navigate("/login");
     } catch (err) {
-      setError("Gagal logout. Silakan coba lagi.");
-      setTimeout(() => setError(""), 3000);
+      handleApiError(err, "Gagal logout");
     }
   };
 
@@ -184,7 +218,6 @@ const Profile = () => {
             {error}
           </Alert>
         )}
-
         {success && (
           <Alert color="green" className="mb-4">
             {success}
@@ -194,19 +227,12 @@ const Profile = () => {
         {!editMode ? (
           <div className="space-y-4">
             <div className="flex flex-col items-center mb-6">
-              <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden mb-4">
-                {userData.avatar ? (
-                  <img
-                    src={userData.avatar}
-                    alt="Avatar"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <Typography variant="h3" className="text-gray-600">
-                    {userData.displayName?.charAt(0)?.toUpperCase() || "U"}
-                  </Typography>
-                )}
-              </div>
+              <Avatar
+                src={userData.photoUrl || ""}
+                alt="Avatar"
+                size="xxl"
+                className="mb-4"
+              />
               <Typography variant="h5">{userData.displayName}</Typography>
               <Typography color="gray" className="mt-1">
                 {userData.email}
@@ -241,22 +267,34 @@ const Profile = () => {
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="flex flex-col items-center mb-6">
-              <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden mb-4">
-                {userData.avatar ? (
-                  <img
-                    src={userData.avatar}
-                    alt="Avatar"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <Typography variant="h3" className="text-gray-600">
-                    {userData.displayName?.charAt(0)?.toUpperCase() || "U"}
-                  </Typography>
-                )}
-              </div>
-              <Button variant="outlined" size="sm" className="mb-4">
-                Ubah Foto Profil
-              </Button>
+              <Avatar
+                src={
+                  avatarFile
+                    ? URL.createObjectURL(avatarFile)
+                    : userData.photoUrl || ""
+                }
+                alt="Avatar"
+                size="xxl"
+                className="mb-4"
+              />
+              <input
+                type="file"
+                id="avatar-upload"
+                accept="image/*"
+                onChange={handleAvatarChange}
+                className="hidden"
+              />
+              <label
+                htmlFor="avatar-upload"
+                className="cursor-pointer bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors"
+              >
+                {avatarFile ? "Ganti Foto" : "Pilih Foto Profil"}
+              </label>
+              {avatarFile && (
+                <Typography variant="small" className="mt-2">
+                  {avatarFile.name}
+                </Typography>
+              )}
             </div>
 
             <div>
@@ -302,7 +340,10 @@ const Profile = () => {
               <Button
                 color="red"
                 variant="outlined"
-                onClick={() => setEditMode(false)}
+                onClick={() => {
+                  setEditMode(false);
+                  setAvatarFile(null);
+                }}
                 fullWidth
               >
                 Batal
@@ -328,40 +369,35 @@ const Profile = () => {
         )}
       </Card>
 
-      {/* Password Change Form Dialog */}
-      <Dialog
-        open={showPasswordForm}
-        handler={() => setShowPasswordForm(!showPasswordForm)}
-      >
+      {/* Password Change Dialog */}
+      <Dialog open={showPasswordForm} handler={setShowPasswordForm}>
         <DialogHeader>Ubah Password</DialogHeader>
         <form onSubmit={handlePasswordSubmit}>
-          <DialogBody>
-            <div className="space-y-4">
-              <Input
-                type="password"
-                name="currentPassword"
-                label="Password Saat Ini"
-                value={passwordData.currentPassword}
-                onChange={handlePasswordChange}
-                required
-              />
-              <Input
-                type="password"
-                name="newPassword"
-                label="Password Baru"
-                value={passwordData.newPassword}
-                onChange={handlePasswordChange}
-                required
-              />
-              <Input
-                type="password"
-                name="confirmPassword"
-                label="Konfirmasi Password Baru"
-                value={passwordData.confirmPassword}
-                onChange={handlePasswordChange}
-                required
-              />
-            </div>
+          <DialogBody className="space-y-4">
+            <Input
+              type="password"
+              name="currentPassword"
+              label="Password Saat Ini"
+              value={passwordData.currentPassword}
+              onChange={handlePasswordChange}
+              required
+            />
+            <Input
+              type="password"
+              name="newPassword"
+              label="Password Baru"
+              value={passwordData.newPassword}
+              onChange={handlePasswordChange}
+              required
+            />
+            <Input
+              type="password"
+              name="confirmPassword"
+              label="Konfirmasi Password Baru"
+              value={passwordData.confirmPassword}
+              onChange={handlePasswordChange}
+              required
+            />
           </DialogBody>
           <DialogFooter>
             <Button
@@ -373,17 +409,14 @@ const Profile = () => {
               Batal
             </Button>
             <Button type="submit" color="blue">
-              Simpan Password Baru
+              Simpan
             </Button>
           </DialogFooter>
         </form>
       </Dialog>
 
       {/* Delete Account Dialog */}
-      <Dialog
-        open={openDeleteDialog}
-        handler={() => setOpenDeleteDialog(!openDeleteDialog)}
-      >
+      <Dialog open={openDeleteDialog} handler={setOpenDeleteDialog}>
         <DialogHeader>Konfirmasi Penghapusan Akun</DialogHeader>
         <DialogBody>
           <Typography>
