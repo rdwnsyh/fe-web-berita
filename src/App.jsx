@@ -6,6 +6,7 @@ import NewsDetail from "./pages/NewsDetail";
 import Home from "./pages/Home";
 // import Search from "./components/Search";
 // import Trending from "./components/Trending";
+import Profile from "./pages/Profile";
 
 function App() {
   return (
@@ -29,7 +30,7 @@ function App() {
           {/* <Route path="/trending" element={<Trending />} /> */}
 
           {/* Profile Routes */}
-          <Route path="/profile" element={<div>Profile Page</div>} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="/settings" element={<div>Settings Page</div>} />
           <Route path="/bookmarks" element={<div>Bookmarks Page</div>} />
 
