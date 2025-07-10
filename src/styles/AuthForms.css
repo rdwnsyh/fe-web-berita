@@ -1,0 +1,219 @@
+/* src/styles/AuthForms.css */
+
+.auth-container {
+  /* Ubah nama kelas utama menjadi lebih generik */
+  max-width: 380px;
+  margin: 40px auto;
+  background-color: #fff;
+  padding: 32px 28px 36px;
+  border-radius: 30px;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  box-shadow: 0 10px 40px rgba(99, 95, 151, 0.1);
+  color: #1f1f1f;
+}
+
+h1.auth-title {
+  /* Tambahkan kelas untuk H1 jika ingin spesifik */
+  font-weight: 900;
+  font-size: 2.8rem;
+  margin-bottom: 0;
+  line-height: 1.1;
+  user-select: none;
+  color: #1f1f1f;
+}
+
+h1.auth-title .highlight {
+  color: #4b2995;
+}
+
+p.auth-subtitle {
+  font-weight: 400;
+  color: #6a5af9;
+  font-size: 1.1rem;
+  margin-top: 4px;
+  margin-bottom: 22px;
+  user-select: none;
+}
+
+label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #1f1f1f;
+  display: block;
+  margin-bottom: 6px;
+  user-select: none;
+}
+
+label .required {
+  color: #d6336c;
+  margin-left: 2px;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="email"] {
+  /* Tambahkan input type email jika ada di register */
+  width: 100%;
+  font-weight: 600;
+  font-size: 1rem;
+  padding: 11px 10px;
+  border-radius: 14px;
+  border: 2px solid #dedede;
+  outline: none;
+  box-sizing: border-box;
+  transition: 0.3s ease;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus {
+  border-color: #4b2995;
+  box-shadow: 0 0 5px #7e66ff7a;
+}
+
+.password-wrapper {
+  position: relative;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  outline: none;
+  font-size: 1.1rem;
+  color: #8b8b8b;
+  user-select: none;
+}
+
+.checkbox-container {
+  margin: 10px 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: #333;
+  user-select: none;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox-label input[type="checkbox"] {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1.8px solid #b2aaff;
+  accent-color: #6a5af9;
+  flex-shrink: 0;
+}
+
+.form-link {
+  /* Ubah nama A tag menjadi lebih spesifik */
+  color: #6a5af9;
+  text-decoration: none;
+  font-weight: 600;
+  user-select: none;
+}
+
+.form-link:hover {
+  text-decoration: underline;
+}
+
+button.auth-btn {
+  /* Ubah nama kelas button */
+  width: 100%;
+  border: none;
+  border-radius: 16px;
+  padding: 14px 0;
+  background: #6a5af9;
+  color: #fff;
+  font-weight: 800;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: background 0.3s ease;
+  user-select: none;
+}
+
+button.auth-btn:hover {
+  background: #775bef;
+}
+
+.divider-text {
+  text-align: center;
+  margin: 22px 0 18px;
+  font-weight: 800;
+  font-size: 0.9rem;
+  color: #9a9a9a;
+  user-select: none;
+}
+
+.social-buttons {
+  display: flex;
+  gap: 12px;
+  user-select: none;
+}
+
+.social-btn {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+  padding: 11px 0;
+  border-radius: 16px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 1rem;
+  user-select: none;
+  border: none;
+  transition: background-color 0.3s ease;
+}
+
+.social-btn.facebook {
+  background: #3b5998;
+  color: #fff;
+}
+
+.social-btn.facebook:hover {
+  background: #304d86;
+}
+
+.social-btn.google {
+  background: #f5f5f5;
+  color: #444;
+  border: 1.5px solid #dadce0;
+}
+
+.social-btn.google:hover {
+  background: #e1e1e1;
+}
+
+.social-icon {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+}
+
+.auth-text {
+  /* Ubah nama kelas */
+  margin-top: 24px;
+  font-size: 0.9rem;
+  color: #6a5af9;
+  text-align: center;
+  user-select: none;
+}
+
+.auth-text a {
+  font-weight: 700;
+  cursor: pointer;
+}
