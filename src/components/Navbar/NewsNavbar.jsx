@@ -1,39 +1,55 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function NewsNavbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
 
-  // 🔹 KATEGORI DISESUAIKAN DENGAN CNN API ENDPOINTS
+  // 🔹 KATEGORI DISESUAIKAN DENGAN ROUTING DAN API ENDPOINTS
   const categories = [
-    { name: "Terbaru", href: "/terbaru", apiCategory: "terbaru" },
-    { name: "Nasional", href: "/nasional", apiCategory: "nasional" },
+    { name: "Terbaru", slug: "terbaru", apiCategory: "terbaru" },
+    { name: "Nasional", slug: "nasional", apiCategory: "nasional" },
     {
       name: "Internasional",
-      href: "/internasional",
+      slug: "internasional",
       apiCategory: "internasional",
     },
-    { name: "Ekonomi", href: "/ekonomi", apiCategory: "ekonomi" },
-    { name: "Olahraga", href: "/olahraga", apiCategory: "olahraga" },
-    { name: "Teknologi", href: "/teknologi", apiCategory: "teknologi" },
-    { name: "Hiburan", href: "/hiburan", apiCategory: "hiburan" },
-    { name: "Gaya Hidup", href: "/gayahidup", apiCategory: "gayahidup" },
+    { name: "Ekonomi", slug: "ekonomi", apiCategory: "ekonomi" },
+    { name: "Olahraga", slug: "olahraga", apiCategory: "olahraga" },
+    { name: "Teknologi", slug: "teknologi", apiCategory: "teknologi" },
+    { name: "Hiburan", slug: "hiburan", apiCategory: "hiburan" },
+    { name: "Gaya Hidup", slug: "gayahidup", apiCategory: "gayahidup" },
   ];
 
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      // Implementasi pencarian - bisa redirect ke halaman search
+      // Implementasi pencarian - redirect ke halaman search
       console.log("Search query:", searchQuery);
-      // window.location.href = `/search?q=${encodeURIComponent(searchQuery)}`;
+      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
     }
   };
 
   const handleCategoryClick = (category) => {
     // Tutup mobile menu saat kategori dipilih
     setIsMenuOpen(false);
-    // Bisa tambahkan logic untuk navigate ke kategori
-    console.log(`Navigating to category: ${category.apiCategory}`);
+
+    // Navigate ke halaman kategori menggunakan slug
+    console.log(`Navigating to category: ${category.slug}`);
+    navigate(`/category/${category.slug}`);
+  };
+
+  const handleLogoClick = () => {
+    navigate("/");
+  };
+
+  const handleHomeClick = () => {
+    navigate("/");
+  };
+
+  const handleTrendingClick = () => {
+    navigate("/trending");
   };
 
   return (
@@ -42,7 +58,10 @@ export default function NewsNavbar() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div className="flex items-center">
-            <a href="/" className="flex items-center space-x-2">
+            <button
+              onClick={handleLogoClick}
+              className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
+            >
               <svg
                 className="h-8 w-8 text-blue-600"
                 fill="none"
@@ -57,17 +76,17 @@ export default function NewsNavbar() {
                 />
               </svg>
               <span className="text-xl font-bold text-gray-800">FOKUS</span>
-            </a>
+            </button>
           </div>
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center space-x-8">
-            <a
-              href="/"
+            <button
+              onClick={handleHomeClick}
               className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
             >
               Home
-            </a>
+            </button>
 
             {/* Categories Dropdown */}
             <div className="relative group">
@@ -88,29 +107,28 @@ export default function NewsNavbar() {
                 </svg>
               </button>
 
-              {/* Dropdown Menu - Diperbesar untuk menampung lebih banyak kategori */}
+              {/* Dropdown Menu */}
               <div className="absolute left-0 mt-2 w-56 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
                 <div className="py-2 grid grid-cols-2 gap-1">
                   {categories.map((category) => (
-                    <a
-                      key={category.name}
-                      href={category.href}
+                    <button
+                      key={category.slug}
                       onClick={() => handleCategoryClick(category)}
-                      className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-blue-600 rounded-md mx-1"
+                      className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-blue-600 rounded-md mx-1 text-left transition-colors"
                     >
                       {category.name}
-                    </a>
+                    </button>
                   ))}
                 </div>
               </div>
             </div>
 
-            <a
-              href="/trending"
+            <button
+              onClick={handleTrendingClick}
               className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
             >
               Trending
-            </a>
+            </button>
           </div>
 
           {/* Search Bar */}
@@ -140,7 +158,7 @@ export default function NewsNavbar() {
               </div>
               <button
                 type="submit"
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-blue-600"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-blue-600 transition-colors"
               >
                 <svg
                   className="h-5 w-5"
@@ -186,31 +204,31 @@ export default function NewsNavbar() {
               {/* Profile Dropdown */}
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
                 <div className="py-1">
-                  <a
-                    href="/profile"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  <button
+                    onClick={() => navigate("/profile")}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                   >
                     Profil Saya
-                  </a>
-                  <a
-                    href="/settings"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  </button>
+                  <button
+                    onClick={() => navigate("/settings")}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                   >
                     Pengaturan
-                  </a>
-                  <a
-                    href="/bookmarks"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  </button>
+                  <button
+                    onClick={() => navigate("/bookmarks")}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                   >
                     Bookmark
-                  </a>
+                  </button>
                   <hr className="my-1" />
-                  <a
-                    href="/logout"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  <button
+                    onClick={() => navigate("/logout")}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                   >
                     Keluar
-                  </a>
+                  </button>
                 </div>
               </div>
             </div>
@@ -257,38 +275,39 @@ export default function NewsNavbar() {
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden">
+          <div className="md:hidden border-t border-gray-200">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-              <a
-                href="/"
-                className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 rounded-md"
+              <button
+                onClick={handleHomeClick}
+                className="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 rounded-md transition-colors"
               >
                 Home
-              </a>
+              </button>
 
               {/* Mobile Categories */}
               <div className="space-y-1">
                 <div className="px-3 py-2 text-base font-medium text-gray-700">
                   Kategori
                 </div>
-                {categories.map((category) => (
-                  <a
-                    key={category.name}
-                    href={category.href}
-                    onClick={() => handleCategoryClick(category)}
-                    className="block px-6 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-md"
-                  >
-                    {category.name}
-                  </a>
-                ))}
+                <div className="grid grid-cols-2 gap-1">
+                  {categories.map((category) => (
+                    <button
+                      key={category.slug}
+                      onClick={() => handleCategoryClick(category)}
+                      className="block w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-md transition-colors"
+                    >
+                      {category.name}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <a
-                href="/trending"
-                className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 rounded-md"
+              <button
+                onClick={handleTrendingClick}
+                className="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 rounded-md transition-colors"
               >
                 Trending
-              </a>
+              </button>
 
               {/* Mobile Search */}
               <div className="px-3 py-2">
@@ -301,6 +320,56 @@ export default function NewsNavbar() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </form>
+              </div>
+
+              {/* Mobile Profile */}
+              <div className="px-3 py-2 border-t border-gray-200">
+                <div className="flex items-center space-x-3 mb-3">
+                  <img
+                    className="h-8 w-8 rounded-full object-cover"
+                    src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+                    alt="User avatar"
+                  />
+                  <span className="text-gray-700 font-medium">Menu Profil</span>
+                </div>
+                <div className="space-y-1">
+                  <button
+                    onClick={() => {
+                      navigate("/profile");
+                      setIsMenuOpen(false);
+                    }}
+                    className="block w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-md transition-colors"
+                  >
+                    Profil Saya
+                  </button>
+                  <button
+                    onClick={() => {
+                      navigate("/settings");
+                      setIsMenuOpen(false);
+                    }}
+                    className="block w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-md transition-colors"
+                  >
+                    Pengaturan
+                  </button>
+                  <button
+                    onClick={() => {
+                      navigate("/bookmarks");
+                      setIsMenuOpen(false);
+                    }}
+                    className="block w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-md transition-colors"
+                  >
+                    Bookmark
+                  </button>
+                  <button
+                    onClick={() => {
+                      navigate("/logout");
+                      setIsMenuOpen(false);
+                    }}
+                    className="block w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-md transition-colors"
+                  >
+                    Keluar
+                  </button>
+                </div>
               </div>
             </div>
           </div>
