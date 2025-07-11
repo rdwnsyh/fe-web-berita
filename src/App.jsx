@@ -1,32 +1,13 @@
 import React from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import NewsNavbar from "./components/Navbar/NewsNavbar";
 import Category from "./pages/Category";
 import NewsDetail from "./pages/NewsDetail";
 import Home from "./pages/Home";
 import Profile from "./pages/Profile";
-import Login from "./pages/auth/Login";
-import Register from "./pages/auth/Register";
+import UserManagement from "./pages/admin/UserManagement";
 
 function App() {
-  // Fungsi untuk mengecek apakah user sudah login
-  const isAuthenticated = () => {
-    return localStorage.getItem("token") !== null;
-  };
-
-  // Protected Route Component
-  const ProtectedRoute = ({ children }) => {
-    if (!isAuthenticated()) {
-      return <Navigate to="/login" replace />;
-    }
-    return children;
-  };
-
   return (
     <Router>
       <div className="App">
@@ -36,18 +17,8 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/category/:slug" element={<Category />} />
           <Route path="/news/detail" element={<NewsDetail />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-
-          {/* Protected Routes */}
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/admin/users" element={<UserManagement />} />
 
           {/* 404 Route */}
           <Route path="*" element={<NotFound />} />

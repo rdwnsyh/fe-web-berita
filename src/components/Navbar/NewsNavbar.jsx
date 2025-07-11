@@ -6,6 +6,10 @@ export default function NewsNavbar() {
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
 
+  // Get user data from localStorage
+  const user = JSON.parse(localStorage.getItem("user")) || {};
+  const isAdmin = user.role === "admin";
+
   // 🔹 KATEGORI DISESUAIKAN DENGAN ROUTING DAN API ENDPOINTS
   const categories = [
     { name: "Terbaru", slug: "terbaru", apiCategory: "terbaru" },
@@ -50,6 +54,20 @@ export default function NewsNavbar() {
 
   const handleTrendingClick = () => {
     navigate("/trending");
+  };
+
+  // Handle navigation to admin user management
+  const handleUserManagementClick = () => {
+    navigate("/admin/users");
+    setIsMenuOpen(false);
+  };
+
+  // Handle logout
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("user");
+    navigate("/login");
   };
 
   return (
@@ -183,7 +201,10 @@ export default function NewsNavbar() {
               <button className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 transition-colors">
                 <img
                   className="h-8 w-8 rounded-full object-cover"
-                  src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+                  src={
+                    user.photoUrl ||
+                    "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+                  }
                   alt="User avatar"
                 />
                 <svg
@@ -222,9 +243,20 @@ export default function NewsNavbar() {
                   >
                     Bookmark
                   </button>
+
+                  {/* Add User Management link for admins */}
+                  {isAdmin && (
+                    <button
+                      onClick={handleUserManagementClick}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      User Management
+                    </button>
+                  )}
+
                   <hr className="my-1" />
                   <button
-                    onClick={() => navigate("/logout")}
+                    onClick={handleLogout}
                     className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                   >
                     Keluar
@@ -327,7 +359,10 @@ export default function NewsNavbar() {
                 <div className="flex items-center space-x-3 mb-3">
                   <img
                     className="h-8 w-8 rounded-full object-cover"
-                    src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+                    src={
+                      user.photoUrl ||
+                      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+                    }
                     alt="User avatar"
                   />
                   <span className="text-gray-700 font-medium">Menu Profil</span>
@@ -360,9 +395,20 @@ export default function NewsNavbar() {
                   >
                     Bookmark
                   </button>
+
+                  {/* Add User Management link for admins in mobile menu */}
+                  {isAdmin && (
+                    <button
+                      onClick={handleUserManagementClick}
+                      className="block w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-md transition-colors"
+                    >
+                      User Management
+                    </button>
+                  )}
+
                   <button
                     onClick={() => {
-                      navigate("/logout");
+                      handleLogout();
                       setIsMenuOpen(false);
                     }}
                     className="block w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-md transition-colors"
