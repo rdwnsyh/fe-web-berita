@@ -6,11 +6,12 @@ import { API_ENDPOINTS } from "../../api/Auth"; // Tambahkan ini
 
 const Register = () => {
   const [formData, setFormData] = useState({
-    displayName: "",
+    username: "", // ganti dari displayName
     email: "",
     password: "",
     confirmPassword: "",
   });
+
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
@@ -23,7 +24,7 @@ const Register = () => {
 
   const validateForm = () => {
     if (
-      !formData.displayName ||
+      !formData.username ||
       !formData.email ||
       !formData.password ||
       !formData.confirmPassword
@@ -31,6 +32,7 @@ const Register = () => {
       setError("Semua field harus diisi");
       return false;
     }
+
 
     if (formData.password !== formData.confirmPassword) {
       setError("Password dan konfirmasi password tidak cocok");
@@ -57,10 +59,11 @@ const Register = () => {
 
     try {
       const response = await axios.post(API_ENDPOINTS.register, {
-        displayName: formData.displayName,
+        username: formData.username, // ubah dari displayName
         email: formData.email.toLowerCase(),
         password: formData.password,
       });
+
 
       navigate("/otp", { state: { email: formData.email.toLowerCase() } });
     } catch (err) {

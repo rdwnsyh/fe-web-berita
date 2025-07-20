@@ -104,12 +104,12 @@ export function RegisterForm({
         <div className="flex flex-col gap-4">
           <div>
             <label className="block text-gray-700 font-medium mb-1">
-              Nama Lengkap<span className="text-red-500">*</span>
+              Username<span className="text-red-500">*</span>
             </label>
             <Input
               type="text"
-              name="displayName"
-              value={formData.displayName}
+              name="username"
+              value={formData.username}
               onChange={handleChange}
               required
               size="lg"
