@@ -225,42 +225,37 @@ export default function NewsNavbar() {
               {/* Profile Dropdown */}
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
                 <div className="py-1">
-                  <button
-                    onClick={() => navigate("/profile")}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                  >
-                    Profil Saya
-                  </button>
-                  <button
-                    onClick={() => navigate("/settings")}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                  >
-                    Pengaturan
-                  </button>
-                  <button
-                    onClick={() => navigate("/bookmarks")}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                  >
-                    Bookmark
-                  </button>
-
-                  {/* Add User Management link for admins */}
-                  {isAdmin && (
-                    <button
-                      onClick={handleUserManagementClick}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                    >
-                      User Management
-                    </button>
+                  {!user.email ? (
+                    <>
+                      <button
+                        onClick={() => navigate("/register")}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                      >
+                        Daftar
+                      </button>
+                      <button
+                        onClick={() => navigate("/login")}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                      >
+                        Masuk
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => navigate("/profile")}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                      >
+                        Profil Saya
+                      </button>
+                      <button
+                        onClick={handleLogout}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                      >
+                        Keluar
+                      </button>
+                    </>
                   )}
-
-                  <hr className="my-1" />
-                  <button
-                    onClick={handleLogout}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                  >
-                    Keluar
-                  </button>
                 </div>
               </div>
             </div>
@@ -368,53 +363,66 @@ export default function NewsNavbar() {
                   <span className="text-gray-700 font-medium">Menu Profil</span>
                 </div>
                 <div className="space-y-1">
-                  <button
-                    onClick={() => {
-                      navigate("/profile");
-                      setIsMenuOpen(false);
-                    }}
-                    className="block w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-md transition-colors"
-                  >
-                    Profil Saya
-                  </button>
-                  <button
-                    onClick={() => {
-                      navigate("/settings");
-                      setIsMenuOpen(false);
-                    }}
-                    className="block w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-md transition-colors"
-                  >
-                    Pengaturan
-                  </button>
-                  <button
-                    onClick={() => {
-                      navigate("/bookmarks");
-                      setIsMenuOpen(false);
-                    }}
-                    className="block w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-md transition-colors"
-                  >
-                    Bookmark
-                  </button>
-
-                  {/* Add User Management link for admins in mobile menu */}
-                  {isAdmin && (
-                    <button
-                      onClick={handleUserManagementClick}
-                      className="block w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-md transition-colors"
-                    >
-                      User Management
-                    </button>
+                  {!user.email ? (
+                    <>
+                      <button
+                        onClick={() => {
+                          navigate("/register");
+                          setIsMenuOpen(false);
+                        }}
+                        className="block w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-md transition-colors"
+                      >
+                        Daftar
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate("/login");
+                          setIsMenuOpen(false);
+                        }}
+                        className="block w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-md transition-colors"
+                      >
+                        Masuk
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => {
+                          navigate("/profile");
+                          setIsMenuOpen(false);
+                        }}
+                        className="block w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-md transition-colors"
+                      >
+                        Profil Saya
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate("/bookmarks");
+                          setIsMenuOpen(false);
+                        }}
+                        className="block w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-md transition-colors"
+                      >
+                        Bookmark
+                      </button>
+                      {isAdmin && (
+                        <button
+                          onClick={handleUserManagementClick}
+                          className="block w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-md transition-colors"
+                        >
+                          User Management
+                        </button>
+                      )}
+                      <button
+                        onClick={() => {
+                          handleLogout();
+                          setIsMenuOpen(false);
+                        }}
+                        className="block w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-md transition-colors"
+                      >
+                        Keluar
+                      </button>
+                    </>
                   )}
-
-                  <button
-                    onClick={() => {
-                      handleLogout();
-                      setIsMenuOpen(false);
-                    }}
-                    className="block w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-md transition-colors"
-                  >
-                    Keluar
-                  </button>
                 </div>
               </div>
             </div>

@@ -1,30 +1,42 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useLocation,
+} from "react-router-dom";
 import NewsNavbar from "./components/Navbar/NewsNavbar";
 import Category from "./pages/Category";
 import NewsDetail from "./pages/NewsDetail";
 import Home from "./pages/Home";
 import Profile from "./pages/Profile";
 import UserManagement from "./pages/admin/UserManagement";
+import Login from "./pages/auth/Login";
+import Register from "./pages/auth/Register";
+import Otp from "./pages/auth/Otp";
 
 function App() {
-  return (
-    <Router>
-      <div className="App">
-        <NewsNavbar />
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<Home />} />
-          <Route path="/category/:slug" element={<Category />} />
-          <Route path="/news/detail" element={<NewsDetail />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/admin/users" element={<UserManagement />} />
+  const location = useLocation();
+  const hideNavbarRoutes = ["/login", "/register"];
 
-          {/* 404 Route */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </div>
-    </Router>
+  const shouldHideNavbar = hideNavbarRoutes.includes(location.pathname);
+
+  return (
+    <div className="App">
+      {!shouldHideNavbar && <NewsNavbar />}
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/" element={<Home />} />
+        <Route path="/category/:slug" element={<Category />} />
+        <Route path="/news/detail" element={<NewsDetail />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/admin/users" element={<UserManagement />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/otp" element={<Otp />} />;{/* 404 Route */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </div>
   );
 }
 

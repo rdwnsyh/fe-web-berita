@@ -7,6 +7,8 @@ export default function NewsDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [newsData, setNewsData] = useState(null);
+  const [imageUrl, setImageUrl] = useState("");
+  const [imageLoading, setImageLoading] = useState(true);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -26,6 +28,10 @@ export default function NewsDetail() {
     try {
       setLoading(true);
       setError(null);
+      setContent("");
+      setNewsData(null);
+      setImageUrl("");
+      setImageLoading(true);
 
       console.log("Fetching news content for URL:", newsUrl);
 
@@ -33,25 +39,50 @@ export default function NewsDetail() {
       console.log("News content response:", response);
 
       if (response && response.data) {
-        // Struktur response bisa berbeda, sesuaikan dengan API Anda
         const data = response.data;
-        setContent(data.content || data.html || "");
+
+        setContent(data.content || data.html || data.text || "");
+        setImageUrl(data.imageUrl || data.thumbnail || data.image || "");
+
         setNewsData({
           title: data.title || "Judul tidak tersedia",
           author: data.author || "Penulis tidak diketahui",
           publishedDate:
-            data.publishedDate || data.date || new Date().toISOString(),
-          source: data.source || "Sumber tidak diketahui",
+            data.publishedDate ||
+            data.date ||
+            data.pubDate ||
+            new Date().toISOString(),
+          source: data.source || data.sourceName || "Sumber tidak diketahui",
           url: newsUrl,
         });
       } else {
-        throw new Error("Format response tidak valid");
+        throw new Error(response?.message || "Format response tidak valid");
       }
     } catch (err) {
       console.error("Error fetching news content:", err);
-      setError("Gagal memuat konten berita. Silakan coba lagi.");
+
+      let errorMessage = "Gagal memuat konten berita. Silakan coba lagi.";
+
+      if (err.response) {
+        if (err.response.status === 404) {
+          errorMessage = "Berita tidak ditemukan.";
+        } else if (err.response.status === 500) {
+          errorMessage =
+            "Terjadi kesalahan di server. Silakan coba lagi nanti.";
+        } else if (err.response.data?.message) {
+          errorMessage = err.response.data.message;
+        }
+      } else if (err.request) {
+        errorMessage =
+          "Tidak ada respon dari server. Periksa koneksi internet Anda.";
+      } else {
+        errorMessage = err.message || errorMessage;
+      }
+
+      setError(errorMessage);
     } finally {
       setLoading(false);
+      setImageLoading(false);
     }
   };
 
@@ -91,7 +122,6 @@ export default function NewsDetail() {
         console.log("Error sharing:", error);
       }
     } else {
-      // Fallback: copy to clipboard
       try {
         await navigator.clipboard.writeText(window.location.href);
         alert("Link berhasil disalin!");
@@ -99,6 +129,35 @@ export default function NewsDetail() {
         console.log("Error copying to clipboard:", error);
       }
     }
+  };
+
+  const renderImage = () => {
+    if (!imageUrl) return null;
+
+    return (
+      <div className="mb-6 relative">
+        {imageLoading && (
+          <div className="absolute inset-0 bg-gray-200 animate-pulse rounded-lg"></div>
+        )}
+        <img
+          src={imageUrl}
+          alt={newsData?.title || "Gambar Berita"}
+          className={`w-full h-auto rounded-lg object-cover ${
+            imageLoading ? "invisible" : ""
+          }`}
+          onLoad={() => setImageLoading(false)}
+          onError={(e) => {
+            e.target.style.display = "none";
+            setImageLoading(false);
+          }}
+        />
+        {!imageLoading && newsData?.source && (
+          <p className="text-sm text-gray-500 mt-2 text-center">
+            Sumber gambar: {newsData.source}
+          </p>
+        )}
+      </div>
+    );
   };
 
   if (loading) {
@@ -316,6 +375,8 @@ export default function NewsDetail() {
 
         {/* Article Content */}
         <div className="bg-white rounded-lg shadow-sm p-6">
+          {renderImage()}
+
           {content ? (
             <div
               className="prose prose-lg max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-a:text-blue-600 prose-strong:text-gray-900"
