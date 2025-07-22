@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { API_ENDPOINTS } from "../../api/Auth"; // import endpoint
 
 const Otp = () => {
   const location = useLocation();
@@ -16,7 +17,7 @@ const Otp = () => {
     setLoading(true);
     setError("");
     try {
-      await axios.post("/api/auth/verify", { email, otp });
+      await axios.post(API_ENDPOINTS.verify, { email, otp }); // gunakan endpoint dari Auth.js // gunakan endpoint dari Auth.js
       navigate("/login");
     } catch (err) {
       setError("OTP salah atau sudah kadaluarsa.");

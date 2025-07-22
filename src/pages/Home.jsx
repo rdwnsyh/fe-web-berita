@@ -11,7 +11,7 @@ export default function Home() {
     const fetchArticles = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:5000/api/news/cnn-news/nasional"
+          " https://icbs.my.id/api/news/cnn-news/nasional"
         );
         setArticles(response.data.data); // pastikan format responsnya sesuai
       } catch (error) {
