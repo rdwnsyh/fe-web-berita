@@ -1,17 +1,9 @@
-import {
-  Card,
-  Input,
-  Checkbox,
-  Button,
-  Typography,
-  Alert,
-} from "@material-tailwind/react";
+import { Card, Input, Button, Typography } from "@material-tailwind/react";
 import { Link } from "react-router-dom";
 
-// Komponen Form Login
+// Komponen Form Login - Hapus alert dari sini karena akan ditangani di page level
 export function LoginForm({
   onSubmit,
-  error,
   loading,
   email,
   setEmail,
@@ -23,11 +15,6 @@ export function LoginForm({
       <Typography variant="h4" color="blue-gray" className="mb-2">
         Masuk ke Akun Anda
       </Typography>
-      {error && (
-        <Alert color="red" className="mb-4">
-          {error}
-        </Alert>
-      )}
       <form className="mt-4 space-y-6" onSubmit={onSubmit}>
         <div className="flex flex-col gap-4">
           <div>
@@ -40,8 +27,9 @@ export function LoginForm({
               onChange={(e) => setEmail(e.target.value)}
               required
               size="lg"
-              className="!border !border-gray-300 !rounded-md"
+              className="!border !border-gray-300 !rounded-md focus:!border-blue-500"
               labelProps={{ className: "hidden" }}
+              disabled={loading}
             />
           </div>
           <div>
@@ -54,12 +42,19 @@ export function LoginForm({
               onChange={(e) => setPassword(e.target.value)}
               required
               size="lg"
-              className="!border !border-gray-300 !rounded-md"
+              className="!border !border-gray-300 !rounded-md focus:!border-blue-500"
               labelProps={{ className: "hidden" }}
+              disabled={loading}
             />
           </div>
         </div>
-        <Button type="submit" color="blue" fullWidth disabled={loading}>
+        <Button
+          type="submit"
+          color="blue"
+          fullWidth
+          disabled={loading}
+          className="mt-6"
+        >
           {loading ? "Memproses..." : "Masuk"}
         </Button>
       </form>
@@ -67,7 +62,7 @@ export function LoginForm({
         Belum punya akun?{" "}
         <Link
           to="/register"
-          className="font-medium text-blue-600 hover:text-blue-500"
+          className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
         >
           Daftar sekarang
         </Link>
@@ -76,30 +71,13 @@ export function LoginForm({
   );
 }
 
-// Komponen Form Register
-export function RegisterForm({
-  onSubmit,
-  error,
-  success,
-  loading,
-  formData,
-  handleChange,
-}) {
+// Komponen Form Register - Hapus alert dari sini karena akan ditangani di page level
+export function RegisterForm({ onSubmit, loading, formData, handleChange }) {
   return (
     <Card color="transparent" shadow={false} className="p-6">
       <Typography variant="h4" color="blue-gray" className="mb-2">
         Buat Akun Baru
       </Typography>
-      {error && (
-        <Alert color="red" className="mb-4">
-          {error}
-        </Alert>
-      )}
-      {success && (
-        <Alert color="green" className="mb-4">
-          {success}
-        </Alert>
-      )}
       <form className="mt-4 space-y-6" onSubmit={onSubmit}>
         <div className="flex flex-col gap-4">
           <div>
@@ -113,8 +91,9 @@ export function RegisterForm({
               onChange={handleChange}
               required
               size="lg"
-              className="!border !border-gray-300 !rounded-md"
+              className="!border !border-gray-300 !rounded-md focus:!border-blue-500"
               labelProps={{ className: "hidden" }}
+              disabled={loading}
             />
           </div>
           <div>
@@ -128,8 +107,9 @@ export function RegisterForm({
               onChange={handleChange}
               required
               size="lg"
-              className="!border !border-gray-300 !rounded-md"
+              className="!border !border-gray-300 !rounded-md focus:!border-blue-500"
               labelProps={{ className: "hidden" }}
+              disabled={loading}
             />
           </div>
           <div>
@@ -143,9 +123,11 @@ export function RegisterForm({
               value={formData.password}
               onChange={handleChange}
               required
+              minLength={8}
               size="lg"
-              className="!border !border-gray-300 !rounded-md"
+              className="!border !border-gray-300 !rounded-md focus:!border-blue-500"
               labelProps={{ className: "hidden" }}
+              disabled={loading}
             />
           </div>
           <div>
@@ -158,13 +140,21 @@ export function RegisterForm({
               value={formData.confirmPassword}
               onChange={handleChange}
               required
+              minLength={8}
               size="lg"
-              className="!border !border-gray-300 !rounded-md"
+              className="!border !border-gray-300 !rounded-md focus:!border-blue-500"
               labelProps={{ className: "hidden" }}
+              disabled={loading}
             />
           </div>
         </div>
-        <Button type="submit" color="blue" fullWidth disabled={loading}>
+        <Button
+          type="submit"
+          color="blue"
+          fullWidth
+          disabled={loading}
+          className="mt-6"
+        >
           {loading ? "Memproses..." : "Daftar"}
         </Button>
       </form>
@@ -172,7 +162,7 @@ export function RegisterForm({
         Sudah punya akun?{" "}
         <Link
           to="/login"
-          className="font-medium text-blue-600 hover:text-blue-500"
+          className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
         >
           Masuk disini
         </Link>

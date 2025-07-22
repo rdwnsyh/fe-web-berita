@@ -2,11 +2,12 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { RegisterForm } from "../../components/Form/NewsForm";
-import { API_ENDPOINTS } from "../../api/Auth"; // Tambahkan ini
+import { API_ENDPOINTS } from "../../api/Auth";
+import { AlertCustomAnimation } from "../../components/Alert/Alert";
 
 const Register = () => {
   const [formData, setFormData] = useState({
-    username: "", // ganti dari displayName
+    username: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -17,30 +18,78 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  // Function to clear alerts
+  const clearAlerts = () => {
+    setError("");
+    setSuccess("");
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // Clear error when user starts typing
+    if (error) setError("");
   };
 
   const validateForm = () => {
-    if (
-      !formData.username ||
-      !formData.email ||
-      !formData.password ||
-      !formData.confirmPassword
-    ) {
-      setError("Semua field harus diisi");
+    const { username, email, password, confirmPassword } = formData;
+
+    // Check empty fields
+    if (!username.trim()) {
+      setError("Username tidak boleh kosong");
       return false;
     }
 
-
-    if (formData.password !== formData.confirmPassword) {
-      setError("Password dan konfirmasi password tidak cocok");
+    if (!email.trim()) {
+      setError("Email tidak boleh kosong");
       return false;
     }
 
-    if (formData.password.length < 8) {
+    if (!password) {
+      setError("Password tidak boleh kosong");
+      return false;
+    }
+
+    if (!confirmPassword) {
+      setError("Konfirmasi password tidak boleh kosong");
+      return false;
+    }
+
+    // Validate username
+    if (username.trim().length < 3) {
+      setError("Username minimal 3 karakter");
+      return false;
+    }
+
+    if (!/^[a-zA-Z0-9_]+$/.test(username.trim())) {
+      setError("Username hanya boleh mengandung huruf, angka, dan underscore");
+      return false;
+    }
+
+    // Validate email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setError("Format email tidak valid");
+      return false;
+    }
+
+    // Validate password
+    if (password.length < 8) {
       setError("Password minimal 8 karakter");
+      return false;
+    }
+
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
+      setError(
+        "Password harus mengandung minimal 1 huruf kecil, 1 huruf besar, dan 1 angka"
+      );
+      return false;
+    }
+
+    // Check password confirmation
+    if (password !== confirmPassword) {
+      setError("Password dan konfirmasi password tidak cocok");
       return false;
     }
 
@@ -50,8 +99,9 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
+    clearAlerts();
 
+    // Validate form
     if (!validateForm()) {
       setLoading(false);
       return;
@@ -59,35 +109,88 @@ const Register = () => {
 
     try {
       const response = await axios.post(API_ENDPOINTS.register, {
-        username: formData.username, // ubah dari displayName
-        email: formData.email.toLowerCase(),
+        username: formData.username.trim(),
+        email: formData.email.trim().toLowerCase(),
         password: formData.password,
       });
 
+      setSuccess("Registrasi berhasil! Mengalihkan ke halaman OTP...");
 
-      navigate("/otp", { state: { email: formData.email.toLowerCase() } });
+      // Redirect to OTP page after showing success message
+      setTimeout(() => {
+        navigate("/otp", {
+          state: {
+            email: formData.email.trim().toLowerCase(),
+            username: formData.username.trim(),
+          },
+        });
+      }, 1500);
     } catch (err) {
-      const errorMessage =
-        err.response?.data?.error ||
-        err.response?.data?.message ||
-        "Registrasi gagal. Silakan coba lagi.";
-      setError(errorMessage);
+      console.error("Registration error:", err);
+
+      // Handle different error scenarios
+      if (err.response?.status === 409) {
+        const errorData = err.response.data;
+        if (errorData.field === "email") {
+          setError("Email sudah terdaftar. Silakan gunakan email lain");
+        } else if (errorData.field === "username") {
+          setError("Username sudah digunakan. Silakan pilih username lain");
+        } else {
+          setError("Email atau username sudah terdaftar");
+        }
+      } else if (err.response?.status === 400) {
+        setError(
+          err.response?.data?.message ||
+            err.response?.data?.error ||
+            "Data yang dimasukkan tidak valid"
+        );
+      } else if (err.response?.status >= 500) {
+        setError("Terjadi kesalahan server. Silakan coba lagi nanti");
+      } else {
+        setError(
+          err.response?.data?.error ||
+            err.response?.data?.message ||
+            "Registrasi gagal. Silakan coba lagi"
+        );
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full">
-        <RegisterForm
-          onSubmit={handleSubmit}
-          error={error}
-          success={success}
-          loading={loading}
-          formData={formData}
-          handleChange={handleChange}
-        />
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-4">
+        {/* Alert Messages */}
+        {error && (
+          <AlertCustomAnimation
+            color="red"
+            onClose={clearAlerts}
+            duration={7000}
+          >
+            {error}
+          </AlertCustomAnimation>
+        )}
+
+        {success && (
+          <AlertCustomAnimation
+            color="green"
+            onClose={clearAlerts}
+            duration={3000}
+          >
+            {success}
+          </AlertCustomAnimation>
+        )}
+
+        {/* Register Form */}
+        <div className="bg-white rounded-lg shadow-md">
+          <RegisterForm
+            onSubmit={handleSubmit}
+            loading={loading}
+            formData={formData}
+            handleChange={handleChange}
+          />
+        </div>
       </div>
     </div>
   );
