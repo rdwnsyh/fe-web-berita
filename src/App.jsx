@@ -17,7 +17,7 @@ import Otp from "./pages/auth/Otp";
 
 function App() {
   const location = useLocation();
-  const hideNavbarRoutes = ["/login", "/register"];
+  const hideNavbarRoutes = ["/login", "/register", "/otp"]; // <-- tambahkan "/otp"
 
   const shouldHideNavbar = hideNavbarRoutes.includes(location.pathname);
 
@@ -33,7 +33,9 @@ function App() {
         <Route path="/admin/users" element={<UserManagement />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/otp" element={<Otp />} />;{/* 404 Route */}
+        <Route path="/otp" element={<Otp />} />
+
+        {/* 404 Route */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </div>
