@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { API_ENDPOINTS } from "../../api/Auth"; // import endpoint
+import { API_ENDPOINTS } from "../../api/Auth";
 
 const Otp = () => {
   const location = useLocation();
@@ -11,9 +11,26 @@ const Otp = () => {
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [timer, setTimer] = useState(60);
+  const [timer, setTimer] = useState(0);
   const [resendLoading, setResendLoading] = useState(false);
 
+  // Fetch expired time from backend
+  useEffect(() => {
+    const fetchOtpExpiry = async () => {
+      try {
+        const res = await axios.post(API_ENDPOINTS.checkOtpExpiry, { email });
+        const expiry = new Date(res.data.expiresAt).getTime();
+        const now = Date.now();
+        const diffInSeconds = Math.max(Math.floor((expiry - now) / 1000), 0);
+        setTimer(diffInSeconds);
+      } catch (err) {
+        console.error("Gagal mengambil data OTP:", err);
+      }
+    };
+    if (email) fetchOtpExpiry();
+  }, [email]);
+
+  // Timer countdown
   useEffect(() => {
     if (timer > 0) {
       const interval = setInterval(() => setTimer((t) => t - 1), 1000);
@@ -39,11 +56,11 @@ const Otp = () => {
     setResendLoading(true);
     setError("");
     try {
-      await axios.post(
-        API_ENDPOINTS.register.replace("registerUser", "resend"),
-        { email }
-      );
-      setTimer(60);
+      const res = await axios.post(API_ENDPOINTS.resend, { email });
+      const expiry = new Date(res.data.expiresAt).getTime();
+      const now = Date.now();
+      const diffInSeconds = Math.max(Math.floor((expiry - now) / 1000), 0);
+      setTimer(diffInSeconds);
     } catch (err) {
       setError("Gagal mengirim ulang OTP. Silakan coba lagi.");
     } finally {
@@ -63,7 +80,8 @@ const Otp = () => {
           Kode OTP hanya berlaku selama{" "}
           <span className="font-bold">{timer}</span> detik.
         </p>
-        {error && <div className="text-red-500 mb-2">{error}</div>}
+        {error && <div className="text-red-500 mb-2 text-center">{error}</div>}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
             type="text"
@@ -72,16 +90,16 @@ const Otp = () => {
             placeholder="Kode OTP"
             className="w-full px-3 py-2 border rounded"
             required
-            disabled={timer === 0}
           />
           <button
             type="submit"
             className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
-            disabled={loading || timer === 0}
+            disabled={loading}
           >
             {loading ? "Memproses..." : "Verifikasi"}
           </button>
         </form>
+
         <div className="mt-4 flex flex-col items-center">
           <button
             type="button"
