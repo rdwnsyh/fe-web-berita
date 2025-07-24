@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import {
   Card,
   Typography,
@@ -9,64 +11,127 @@ import {
   DialogHeader,
   DialogBody,
   DialogFooter,
-  Textarea,
   Avatar,
+  Spinner,
+  IconButton,
 } from "@material-tailwind/react";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import {
+  PencilIcon,
+  CheckIcon,
+  XMarkIcon,
+  KeyIcon,
+  ArrowLeftOnRectangleIcon,
+  UserCircleIcon,
+  EnvelopeIcon,
+  ShieldCheckIcon,
+} from "@heroicons/react/24/outline";
 
 const Profile = () => {
   const [userData, setUserData] = useState({
-    displayName: "",
+    username: "",
     email: "",
-    bio: "",
-    photoUrl: "",
+    displayName: "",
+    isEmailVerified: false,
+  });
+  const [editData, setEditData] = useState({
+    username: "",
+    displayName: "",
   });
   const [editMode, setEditMode] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Changed to true initially
+  const [updating, setUpdating] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
-  const [showPasswordForm, setShowPasswordForm] = useState(false);
-  const [avatarFile, setAvatarFile] = useState(null);
+  const [passwordLoading, setPasswordLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Fetch user profile
-  const fetchUserProfile = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get("/api/auth/profile", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-      setUserData(response.data);
-      setLoading(false);
-    } catch (err) {
-      handleApiError(err, "Gagal memuat profil");
-      if (err.response?.status === 401) navigate("/login");
-    }
-  };
-
+  // Fetch user profile data
   useEffect(() => {
-    fetchUserProfile();
-  }, []);
+    const fetchUserProfile = async () => {
+      setLoading(true);
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          navigate("/login");
+          return;
+        }
 
-  // Handle API errors consistently
+        console.log("Mengambil data profil..."); // Debug log
+        const response = await axios.get(
+          "http://localhost:5000/api/user/profile",
+          {
+            // TAMBAH BASE URL
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        console.log("Response dari API:", response); // Debug log
+
+        if (response.data && response.data.success && response.data.user) {
+          const user = response.data.user;
+          console.log("Data user diterima:", user); // Debug log
+          setUserData({
+            username: user.username || user.email.split("@")[0],
+            email: user.email,
+            displayName: user.displayName || user.username,
+            isEmailVerified: user.isEmailVerified || false,
+            photoUrl: user.photoUrl || "",
+          });
+        } else {
+          console.error("Format respons tidak valid:", response.data);
+          setError("Format data dari server tidak valid");
+        }
+      } catch (error) {
+        console.error("Error saat mengambil profil:", {
+          message: error.message,
+          response: error.response,
+        });
+
+        let errorMessage = "Gagal memuat profil";
+        if (error.response) {
+          if (error.response.status === 401) {
+            errorMessage = "Sesi telah berakhir, silakan login kembali";
+            localStorage.removeItem("token");
+            navigate("/login");
+          } else if (error.response.data?.message) {
+            errorMessage = error.response.data.message;
+          }
+        }
+
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, [navigate]);
+
+  // Handle API errors
   const handleApiError = (error, defaultMessage) => {
-    setError(error.response?.data?.message || defaultMessage);
-    setTimeout(() => setError(""), 3000);
+    const message = error?.response?.data?.message || defaultMessage;
+    setError(message);
+    setTimeout(() => setError(""), 5000);
   };
 
-  // Handle input changes
-  const handleInputChange = (e) => {
+  // Handle success messages
+  const showSuccessMessage = (message) => {
+    setSuccess(message);
+    setTimeout(() => setSuccess(""), 5000);
+  };
+
+  // Handle edit data changes
+  const handleEditChange = (e) => {
     const { name, value } = e.target;
-    setUserData((prev) => ({ ...prev, [name]: value }));
+    setEditData((prev) => ({ ...prev, [name]: value }));
   };
 
   // Handle password changes
@@ -75,49 +140,56 @@ const Profile = () => {
     setPasswordData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Handle avatar file selection
-  const handleAvatarChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setAvatarFile(e.target.files[0]);
-    }
+  // Start edit mode
+  const startEdit = () => {
+    setEditData({
+      username: userData.username,
+      displayName: userData.displayName,
+    });
+    setEditMode(true);
+  };
+
+  // Cancel edit
+  const cancelEdit = () => {
+    setEditMode(false);
+    setEditData({
+      username: userData.username,
+      displayName: userData.displayName,
+    });
   };
 
   // Submit profile updates
-  const handleSubmit = async (e) => {
+  const handleProfileUpdate = async (e) => {
     e.preventDefault();
+    setUpdating(true);
+
     try {
-      const formData = new FormData();
-      formData.append("displayName", userData.displayName);
-      formData.append("bio", userData.bio);
-      if (avatarFile) {
-        formData.append("photo", avatarFile);
-      }
-
-      const response = await axios.patch("/api/auth/profile", formData, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-          "Content-Type": "multipart/form-data",
+      const token = localStorage.getItem("token");
+      const response = await axios.patch(
+        "/api/user/edit-profile",
+        {
+          displayName: editData.displayName,
+          // password: ... // jika ingin update password
         },
-      });
-
-      setUserData(response.data);
-      setEditMode(false);
-      setAvatarFile(null);
-      setSuccess("Profil berhasil diperbarui!");
-      setTimeout(() => setSuccess(""), 3000);
-
-      // Update local storage
-      const user = JSON.parse(localStorage.getItem("user"));
-      localStorage.setItem(
-        "user",
-        JSON.stringify({
-          ...user,
-          displayName: response.data.displayName,
-          photoUrl: response.data.photoUrl,
-        })
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
-    } catch (err) {
-      handleApiError(err, "Gagal memperbarui profil");
+
+      if (response.data.success) {
+        setUserData((prev) => ({
+          ...prev,
+          displayName: response.data.user.displayName,
+        }));
+        showSuccessMessage(response.data.message);
+        setEditMode(false);
+      }
+    } catch (error) {
+      // handle error
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -126,13 +198,19 @@ const Profile = () => {
     e.preventDefault();
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       setError("Password baru dan konfirmasi tidak cocok");
-      setTimeout(() => setError(""), 3000);
       return;
     }
 
+    if (passwordData.newPassword.length < 6) {
+      setError("Password baru minimal 6 karakter");
+      return;
+    }
+
+    setPasswordLoading(true);
+
     try {
       await axios.post(
-        "/api/auth/change-password",
+        "/api/user/change-password",
         {
           currentPassword: passwordData.currentPassword,
           newPassword: passwordData.newPassword,
@@ -144,35 +222,17 @@ const Profile = () => {
         }
       );
 
-      setSuccess("Password berhasil diubah!");
+      showSuccessMessage("Password berhasil diubah!");
       setPasswordData({
         currentPassword: "",
         newPassword: "",
         confirmPassword: "",
       });
-      setShowPasswordForm(false);
-      setTimeout(() => setSuccess(""), 3000);
+      setShowPasswordDialog(false);
     } catch (err) {
       handleApiError(err, "Gagal mengubah password");
-    }
-  };
-
-  // Delete account
-  const handleDeleteAccount = async () => {
-    try {
-      await axios.delete("/api/auth/account", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-
-      // Clear user data
-      localStorage.removeItem("token");
-      localStorage.removeItem("refreshToken");
-      localStorage.removeItem("user");
-      navigate("/");
-    } catch (err) {
-      handleApiError(err, "Gagal menghapus akun");
+    } finally {
+      setPasswordLoading(false);
     }
   };
 
@@ -189,252 +249,424 @@ const Profile = () => {
         }
       );
 
+      showSuccessMessage("Berhasil logout!");
+
+      // Clear local storage and redirect
       localStorage.removeItem("token");
       localStorage.removeItem("refreshToken");
       localStorage.removeItem("user");
       navigate("/login");
     } catch (err) {
-      handleApiError(err, "Gagal logout");
+      console.error("Logout error:", err);
+      // Still clear storage and redirect even if API fails
+      localStorage.removeItem("token");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("user");
+      navigate("/login");
+    }
+  };
+
+  // Handle email verification resend
+  const handleResendVerification = async () => {
+    try {
+      await axios.post(
+        "/api/user/resend-verification",
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      showSuccessMessage("Email verifikasi telah dikirim!");
+    } catch (error) {
+      handleApiError(error, "Gagal mengirim email verifikasi");
     }
   };
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Typography variant="h5">Memuat profil...</Typography>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Spinner className="h-12 w-12 text-blue-500 mx-auto mb-4" />
+          <Typography variant="h6" color="gray">
+            Memuat profil...
+          </Typography>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <Card className="p-6 max-w-3xl mx-auto">
-        <Typography variant="h4" className="mb-6 text-center">
-          Profil Pengguna
-        </Typography>
+    <div className="min-h-screen bg-gray-50 py-6 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <Typography variant="h3" className="text-gray-900 font-bold mb-2">
+            Profil Saya
+          </Typography>
+          <Typography variant="lead" color="gray" className="max-w-2xl mx-auto">
+            Kelola informasi profil dan pengaturan akun Anda
+          </Typography>
+        </div>
 
+        {/* Alert Messages */}
         {error && (
-          <Alert color="red" className="mb-4">
+          <Alert color="red" className="mb-6 max-w-2xl mx-auto">
             {error}
           </Alert>
         )}
         {success && (
-          <Alert color="green" className="mb-4">
+          <Alert color="green" className="mb-6 max-w-2xl mx-auto">
             {success}
           </Alert>
         )}
 
-        {!editMode ? (
-          <div className="space-y-4">
-            <div className="flex flex-col items-center mb-6">
-              <Avatar
-                src={userData.photoUrl || ""}
-                alt="Avatar"
-                size="xxl"
-                className="mb-4"
-              />
-              <Typography variant="h5">{userData.displayName}</Typography>
-              <Typography color="gray" className="mt-1">
-                {userData.email}
-              </Typography>
-            </div>
-
-            {userData.bio && (
-              <div>
-                <Typography variant="h6" className="mb-2">
-                  Bio
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Profile Card */}
+          <div className="lg:col-span-2">
+            <Card className="p-6 shadow-lg">
+              <div className="flex items-center justify-between mb-6">
+                <Typography
+                  variant="h5"
+                  className="text-gray-900 font-semibold"
+                >
+                  Informasi Profil
                 </Typography>
-                <Typography>{userData.bio}</Typography>
+                {!editMode && (
+                  <IconButton
+                    variant="text"
+                    color="blue"
+                    onClick={startEdit}
+                    className="rounded-full"
+                  >
+                    <PencilIcon className="h-5 w-5" />
+                  </IconButton>
+                )}
               </div>
-            )}
 
-            <div className="flex space-x-4 pt-6">
-              <Button color="blue" onClick={() => setEditMode(true)} fullWidth>
-                Edit Profil
-              </Button>
-              <Button
-                color="gray"
-                onClick={() => setShowPasswordForm(true)}
-                fullWidth
-              >
-                Ubah Password
-              </Button>
-              <Button color="red" onClick={handleLogout} fullWidth>
-                Logout
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="flex flex-col items-center mb-6">
-              <Avatar
-                src={
-                  avatarFile
-                    ? URL.createObjectURL(avatarFile)
-                    : userData.photoUrl || ""
-                }
-                alt="Avatar"
-                size="xxl"
-                className="mb-4"
-              />
-              <input
-                type="file"
-                id="avatar-upload"
-                accept="image/*"
-                onChange={handleAvatarChange}
-                className="hidden"
-              />
-              <label
-                htmlFor="avatar-upload"
-                className="cursor-pointer bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors"
-              >
-                {avatarFile ? "Ganti Foto" : "Pilih Foto Profil"}
-              </label>
-              {avatarFile && (
-                <Typography variant="small" className="mt-2">
-                  {avatarFile.name}
-                </Typography>
+              {!editMode ? (
+                // View Mode
+                <div className="space-y-6">
+                  <div className="flex items-center space-x-4 p-4 bg-blue-50 rounded-lg">
+                    {/* <Avatar
+                      size="xl"
+                      className="bg-blue-500 text-white"
+                      alt={userData.displayName}
+                    >
+                      {userData.displayName.charAt(0).toUpperCase()}
+                    </Avatar> */}
+                    <div>
+                      <Typography variant="h6" className="text-gray-900">
+                        {userData.displayName}
+                      </Typography>
+                      <Typography variant="small" color="gray">
+                        @{userData.username}
+                      </Typography>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 border border-gray-200 rounded-lg">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <UserCircleIcon className="h-5 w-5 text-gray-500" />
+                        <Typography
+                          variant="small"
+                          color="gray"
+                          className="font-medium"
+                        >
+                          Username
+                        </Typography>
+                      </div>
+                      <Typography variant="h6" className="text-gray-900">
+                        @{userData.username}
+                      </Typography>
+                    </div>
+
+                    <div className="p-4 border border-gray-200 rounded-lg">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <EnvelopeIcon className="h-5 w-5 text-gray-500" />
+                        <Typography
+                          variant="small"
+                          color="gray"
+                          className="font-medium"
+                        >
+                          Email
+                        </Typography>
+                      </div>
+                      <Typography
+                        variant="h6"
+                        className="text-gray-900 break-all"
+                      >
+                        {userData.email}
+                      </Typography>
+                    </div>
+
+                    <div className="p-4 border border-gray-200 rounded-lg">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <ShieldCheckIcon className="h-5 w-5 text-gray-500" />
+                        <Typography
+                          variant="small"
+                          color="gray"
+                          className="font-medium"
+                        >
+                          Status Email
+                        </Typography>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <div
+                          className={`w-2 h-2 rounded-full ${
+                            userData.isEmailVerified
+                              ? "bg-green-500"
+                              : "bg-red-500"
+                          }`}
+                        />
+                        <Typography
+                          variant="small"
+                          className={
+                            userData.isEmailVerified
+                              ? "text-green-600"
+                              : "text-red-600"
+                          }
+                        >
+                          {userData.isEmailVerified
+                            ? "Terverifikasi"
+                            : "Belum Terverifikasi"}
+                        </Typography>
+                      </div>
+                    </div>
+
+                    <div className="p-4 border border-gray-200 rounded-lg">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <Typography
+                          variant="small"
+                          color="gray"
+                          className="font-medium"
+                        >
+                          Nama Tampilan
+                        </Typography>
+                      </div>
+                      <Typography variant="h6" className="text-gray-900">
+                        {userData.displayName}
+                      </Typography>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                // Edit Mode
+                <div className="space-y-4">
+                  <div>
+                    <Typography variant="h6" className="mb-2 text-gray-700">
+                      Username
+                    </Typography>
+                    <Input
+                      name="username"
+                      value={editData.username}
+                      onChange={handleEditChange}
+                      placeholder="Masukkan username"
+                      required
+                      disabled={updating}
+                      className="!border-gray-300 focus:!border-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <Typography variant="h6" className="mb-2 text-gray-700">
+                      Nama Tampilan
+                    </Typography>
+                    <Input
+                      name="displayName"
+                      value={editData.displayName}
+                      onChange={handleEditChange}
+                      placeholder="Masukkan nama tampilan"
+                      required
+                      disabled={updating}
+                      className="!border-gray-300 focus:!border-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <Typography variant="h6" className="mb-2 text-gray-700">
+                      Email
+                    </Typography>
+                    <Input
+                      value={userData.email}
+                      disabled
+                      className="!bg-gray-100 !border-gray-300"
+                    />
+                    <Typography variant="small" color="gray" className="mt-1">
+                      Email tidak dapat diubah
+                    </Typography>
+                  </div>
+
+                  <div className="flex space-x-3 pt-4">
+                    <Button
+                      onClick={handleProfileUpdate}
+                      color="blue"
+                      disabled={updating}
+                      className="flex items-center space-x-2"
+                    >
+                      {updating ? (
+                        <Spinner className="h-4 w-4" />
+                      ) : (
+                        <CheckIcon className="h-4 w-4" />
+                      )}
+                      <span>{updating ? "Menyimpan..." : "Simpan"}</span>
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      color="gray"
+                      onClick={cancelEdit}
+                      disabled={updating}
+                      className="flex items-center space-x-2"
+                    >
+                      <XMarkIcon className="h-4 w-4" />
+                      <span>Batal</span>
+                    </Button>
+                  </div>
+                </div>
               )}
-            </div>
-
-            <div>
-              <Typography variant="h6" className="mb-2">
-                Nama Tampilan
-              </Typography>
-              <Input
-                name="displayName"
-                value={userData.displayName}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-
-            <div>
-              <Typography variant="h6" className="mb-2">
-                Email
-              </Typography>
-              <Input
-                name="email"
-                value={userData.email}
-                disabled
-                className="bg-gray-100"
-              />
-            </div>
-
-            <div>
-              <Typography variant="h6" className="mb-2">
-                Bio
-              </Typography>
-              <Textarea
-                name="bio"
-                value={userData.bio || ""}
-                onChange={handleInputChange}
-                rows={4}
-              />
-            </div>
-
-            <div className="flex space-x-4 pt-4">
-              <Button type="submit" color="blue" fullWidth>
-                Simpan Perubahan
-              </Button>
-              <Button
-                color="red"
-                variant="outlined"
-                onClick={() => {
-                  setEditMode(false);
-                  setAvatarFile(null);
-                }}
-                fullWidth
-              >
-                Batal
-              </Button>
-            </div>
-          </form>
-        )}
-
-        {!editMode && (
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <Typography variant="h6" className="mb-4">
-              Zona Berbahaya
-            </Typography>
-            <Button
-              color="red"
-              variant="outlined"
-              onClick={() => setOpenDeleteDialog(true)}
-              fullWidth
-            >
-              Hapus Akun
-            </Button>
+            </Card>
           </div>
-        )}
-      </Card>
+
+          {/* Actions Card */}
+          <div className="space-y-6">
+            <Card className="p-6 shadow-lg">
+              <Typography
+                variant="h6"
+                className="mb-4 text-gray-900 font-semibold"
+              >
+                Pengaturan Akun
+              </Typography>
+              <div className="space-y-3">
+                <Button
+                  variant="outlined"
+                  color="blue"
+                  fullWidth
+                  onClick={() => setShowPasswordDialog(true)}
+                  className="flex items-center justify-center space-x-2"
+                >
+                  <KeyIcon className="h-4 w-4" />
+                  <span>Ubah Password</span>
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="red"
+                  fullWidth
+                  onClick={handleLogout}
+                  className="flex items-center justify-center space-x-2"
+                >
+                  <ArrowLeftOnRectangleIcon className="h-4 w-4" />
+                  <span>Logout</span>
+                </Button>
+              </div>
+            </Card>
+
+            {!userData.isEmailVerified && (
+              <Card className="p-6 shadow-lg border-l-4 border-yellow-500">
+                <Typography variant="h6" className="text-yellow-800 mb-2">
+                  Email Belum Terverifikasi
+                </Typography>
+                <Typography variant="small" color="gray" className="mb-3">
+                  Silakan verifikasi email Anda untuk mengakses semua fitur.
+                </Typography>
+                <Button
+                  size="sm"
+                  color="yellow"
+                  variant="outlined"
+                  fullWidth
+                  onClick={handleResendVerification}
+                >
+                  Kirim Ulang Verifikasi
+                </Button>
+              </Card>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Password Change Dialog */}
-      <Dialog open={showPasswordForm} handler={setShowPasswordForm}>
-        <DialogHeader>Ubah Password</DialogHeader>
-        <form onSubmit={handlePasswordSubmit}>
-          <DialogBody className="space-y-4">
+      <Dialog
+        open={showPasswordDialog}
+        handler={setShowPasswordDialog}
+        size="sm"
+      >
+        <DialogHeader className="flex items-center space-x-2">
+          <KeyIcon className="h-6 w-6 text-blue-500" />
+          <span>Ubah Password</span>
+        </DialogHeader>
+        <DialogBody className="space-y-4">
+          <div>
+            <Typography variant="h6" className="mb-2 text-gray-700">
+              Password Saat Ini
+            </Typography>
             <Input
               type="password"
               name="currentPassword"
-              label="Password Saat Ini"
               value={passwordData.currentPassword}
               onChange={handlePasswordChange}
               required
+              disabled={passwordLoading}
+              className="!border-gray-300 focus:!border-blue-500"
             />
+          </div>
+          <div>
+            <Typography variant="h6" className="mb-2 text-gray-700">
+              Password Baru
+            </Typography>
             <Input
               type="password"
               name="newPassword"
-              label="Password Baru"
               value={passwordData.newPassword}
               onChange={handlePasswordChange}
               required
+              disabled={passwordLoading}
+              className="!border-gray-300 focus:!border-blue-500"
             />
+          </div>
+          <div>
+            <Typography variant="h6" className="mb-2 text-gray-700">
+              Konfirmasi Password Baru
+            </Typography>
             <Input
               type="password"
               name="confirmPassword"
-              label="Konfirmasi Password Baru"
               value={passwordData.confirmPassword}
               onChange={handlePasswordChange}
               required
+              disabled={passwordLoading}
+              className="!border-gray-300 focus:!border-blue-500"
             />
-          </DialogBody>
-          <DialogFooter>
-            <Button
-              variant="text"
-              color="red"
-              onClick={() => setShowPasswordForm(false)}
-              className="mr-2"
-            >
-              Batal
-            </Button>
-            <Button type="submit" color="blue">
-              Simpan
-            </Button>
-          </DialogFooter>
-        </form>
-      </Dialog>
-
-      {/* Delete Account Dialog */}
-      <Dialog open={openDeleteDialog} handler={setOpenDeleteDialog}>
-        <DialogHeader>Konfirmasi Penghapusan Akun</DialogHeader>
-        <DialogBody>
-          <Typography>
-            Apakah Anda yakin ingin menghapus akun Anda? Semua data akan dihapus
-            secara permanen dan tidak dapat dikembalikan.
-          </Typography>
+          </div>
         </DialogBody>
-        <DialogFooter>
+        <DialogFooter className="space-x-2">
           <Button
             variant="text"
-            color="blue-gray"
-            onClick={() => setOpenDeleteDialog(false)}
-            className="mr-2"
+            color="gray"
+            onClick={() => {
+              setShowPasswordDialog(false);
+              setPasswordData({
+                currentPassword: "",
+                newPassword: "",
+                confirmPassword: "",
+              });
+            }}
+            disabled={passwordLoading}
           >
             Batal
           </Button>
-          <Button color="red" onClick={handleDeleteAccount}>
-            Hapus Akun
+          <Button
+            onClick={handlePasswordSubmit}
+            color="blue"
+            disabled={passwordLoading}
+            className="flex items-center space-x-2"
+          >
+            {passwordLoading ? (
+              <Spinner className="h-4 w-4" />
+            ) : (
+              <CheckIcon className="h-4 w-4" />
+            )}
+            <span>{passwordLoading ? "Mengubah..." : "Simpan"}</span>
           </Button>
         </DialogFooter>
       </Dialog>
