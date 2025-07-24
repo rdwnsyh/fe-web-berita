@@ -2,6 +2,323 @@ import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import axios from "axios";
 
+// Comment Components
+const CommentBubble = ({ comment, onReply }) => {
+  const [showReplyForm, setShowReplyForm] = useState(false);
+  const [replyText, setReplyText] = useState("");
+
+  const handleSubmitReply = (e) => {
+    e.preventDefault();
+    if (replyText.trim()) {
+      onReply(comment._id, replyText);
+      setReplyText("");
+      setShowReplyForm(false);
+    }
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString("id-ID", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4 mb-4">
+      <div className="flex items-start space-x-3">
+        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+          {comment.author?.charAt(0)?.toUpperCase() || "A"}
+        </div>
+        <div className="flex-1">
+          <div className="flex items-center space-x-2 mb-1">
+            <h4 className="font-semibold text-gray-900 text-sm">
+              {comment.author || "Anonim"}
+            </h4>
+            <span className="text-xs text-gray-500">
+              {formatDate(comment.createdAt)}
+            </span>
+          </div>
+          <p className="text-gray-700 text-sm leading-relaxed mb-3">
+            {comment.content}
+          </p>
+          <div className="flex items-center space-x-4 text-xs">
+            <button
+              onClick={() => setShowReplyForm(!showReplyForm)}
+              className="text-blue-600 hover:text-blue-800 font-medium transition-colors"
+            >
+              Balas
+            </button>
+            <span className="text-gray-400">•</span>
+            <button className="text-gray-500 hover:text-red-600 transition-colors">
+              Laporkan
+            </button>
+          </div>
+
+          {showReplyForm && (
+            <form
+              onSubmit={handleSubmitReply}
+              className="mt-3 bg-gray-50 rounded-lg p-3"
+            >
+              <textarea
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                placeholder="Tulis balasan..."
+                className="w-full text-sm border border-gray-200 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                rows="2"
+              />
+              <div className="flex justify-end space-x-2 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowReplyForm(false)}
+                  className="px-3 py-1 text-xs text-gray-600 hover:text-gray-800 transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Kirim
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Replies */}
+          {comment.replies && comment.replies.length > 0 && (
+            <div className="mt-4 ml-4 border-l-2 border-gray-100 pl-4">
+              {comment.replies.map((reply) => (
+                <div key={reply._id} className="mb-3">
+                  <div className="flex items-start space-x-2">
+                    <div className="w-6 h-6 bg-gradient-to-br from-green-500 to-teal-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                      {reply.author?.charAt(0)?.toUpperCase() || "A"}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <h5 className="font-medium text-gray-900 text-xs">
+                          {reply.author || "Anonim"}
+                        </h5>
+                        <span className="text-xs text-gray-500">
+                          {formatDate(reply.createdAt)}
+                        </span>
+                      </div>
+                      <p className="text-gray-700 text-xs leading-relaxed">
+                        {reply.content}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const CommentModal = ({ isOpen, onClose, onSubmit, articleUrl }) => {
+  const [commentText, setCommentText] = useState("");
+  const [authorName, setAuthorName] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (commentText.trim() && authorName.trim()) {
+      setIsSubmitting(true);
+      await onSubmit({
+        content: commentText,
+        author: authorName,
+        articleUrl: articleUrl,
+      });
+      setCommentText("");
+      setAuthorName("");
+      setIsSubmitting(false);
+      onClose();
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-auto">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Tulis Komentar
+            </h3>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Nama
+              </label>
+              <input
+                type="text"
+                value={authorName}
+                onChange={(e) => setAuthorName(e.target.value)}
+                placeholder="Masukkan nama Anda"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Komentar
+              </label>
+              <textarea
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder="Bagikan pendapat Anda tentang artikel ini..."
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                rows="4"
+                required
+              />
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? "Mengirim..." : "Kirim Komentar"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const FloatingCommentButton = ({ onClick, commentCount }) => {
+  return (
+    <div className="fixed bottom-6 right-6 z-40">
+      <button
+        onClick={onClick}
+        className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-110 group"
+      >
+        <div className="relative">
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+            />
+          </svg>
+          {commentCount > 0 && (
+            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-semibold">
+              {commentCount > 99 ? "99+" : commentCount}
+            </span>
+          )}
+        </div>
+      </button>
+
+      {/* Tooltip */}
+      <div className="absolute bottom-full right-0 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+        <div className="bg-gray-800 text-white text-sm px-3 py-1 rounded-lg whitespace-nowrap">
+          {commentCount > 0 ? `${commentCount} Komentar` : "Tulis Komentar"}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const CommentsSection = ({ comments, onReply, isLoading }) => {
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="bg-gray-100 animate-pulse rounded-lg p-4">
+            <div className="flex items-start space-x-3">
+              <div className="w-8 h-8 bg-gray-300 rounded-full"></div>
+              <div className="flex-1 space-y-2">
+                <div className="h-4 bg-gray-300 rounded w-1/4"></div>
+                <div className="h-4 bg-gray-300 rounded w-3/4"></div>
+                <div className="h-4 bg-gray-300 rounded w-1/2"></div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (comments.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg
+            className="w-8 h-8 text-gray-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+            />
+          </svg>
+        </div>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">
+          Belum ada komentar
+        </h3>
+        <p className="text-gray-500">
+          Jadilah yang pertama memberikan komentar untuk artikel ini
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {comments.map((comment) => (
+        <CommentBubble key={comment._id} comment={comment} onReply={onReply} />
+      ))}
+    </div>
+  );
+};
+
 export default function NewsDetail() {
   const { search } = useLocation();
   const url = new URLSearchParams(search).get("url");
@@ -10,6 +327,12 @@ export default function NewsDetail() {
   const [error, setError] = useState(null);
   const [meta, setMeta] = useState(null);
   const [retryCount, setRetryCount] = useState(0);
+
+  // Comment state
+  const [comments, setComments] = useState([]);
+  const [showCommentModal, setShowCommentModal] = useState(false);
+  const [showCommentsSection, setShowCommentsSection] = useState(false);
+  const [commentsLoading, setCommentsLoading] = useState(false);
 
   const fetchContent = async (retryAttempt = 0) => {
     try {
@@ -103,6 +426,137 @@ export default function NewsDetail() {
     }
   };
 
+  const fetchComments = async () => {
+    try {
+      setCommentsLoading(true);
+      // Ganti dengan endpoint API komentar Anda
+      const res = await axios.get(
+        `https://icbs.my.id/api/comments?articleUrl=${encodeURIComponent(url)}`
+      );
+      setComments(res.data.comments || []);
+    } catch (err) {
+      console.error("Failed to fetch comments:", err);
+      // Set sample comments for demo
+      setComments([
+        {
+          _id: "1",
+          author: "Ahmad Rizki",
+          content:
+            "Artikel yang sangat informatif! Terima kasih atas informasinya.",
+          createdAt: new Date().toISOString(),
+          replies: [
+            {
+              _id: "1-1",
+              author: "Sarah Putri",
+              content:
+                "Setuju! Sangat membantu untuk memahami situasi terkini.",
+              createdAt: new Date().toISOString(),
+            },
+          ],
+        },
+        {
+          _id: "2",
+          author: "Diana Sari",
+          content:
+            "Semoga situasi ini segera membaik. Kita semua harus saling mendukung dalam masa sulit ini.",
+          createdAt: new Date(Date.now() - 3600000).toISOString(),
+          replies: [],
+        },
+      ]);
+    } finally {
+      setCommentsLoading(false);
+    }
+  };
+
+  const handleSubmitComment = async (commentData) => {
+    try {
+      // Ganti dengan endpoint API untuk submit komentar
+      const res = await axios.post(
+        "https://icbs.my.id/api/comments",
+        commentData
+      );
+
+      // Add new comment to the beginning of the array
+      const newComment = {
+        _id: Date.now().toString(),
+        ...commentData,
+        createdAt: new Date().toISOString(),
+        replies: [],
+      };
+
+      setComments((prev) => [newComment, ...prev]);
+    } catch (err) {
+      console.error("Failed to submit comment:", err);
+      // For demo, add comment anyway
+      const newComment = {
+        _id: Date.now().toString(),
+        ...commentData,
+        createdAt: new Date().toISOString(),
+        replies: [],
+      };
+      setComments((prev) => [newComment, ...prev]);
+    }
+  };
+
+  const handleReply = async (commentId, replyContent) => {
+    try {
+      // Ganti dengan endpoint API untuk reply
+      const replyData = {
+        parentId: commentId,
+        content: replyContent,
+        author: "User", // You might want to get this from user context
+        articleUrl: url,
+      };
+
+      const res = await axios.post(
+        "https://icbs.my.id/api/comments/reply",
+        replyData
+      );
+
+      // Update the comment with new reply
+      const newReply = {
+        _id: Date.now().toString(),
+        author: "User",
+        content: replyContent,
+        createdAt: new Date().toISOString(),
+      };
+
+      setComments((prev) =>
+        prev.map((comment) =>
+          comment._id === commentId
+            ? { ...comment, replies: [...(comment.replies || []), newReply] }
+            : comment
+        )
+      );
+    } catch (err) {
+      console.error("Failed to submit reply:", err);
+      // For demo, add reply anyway
+      const newReply = {
+        _id: Date.now().toString(),
+        author: "User",
+        content: replyContent,
+        createdAt: new Date().toISOString(),
+      };
+
+      setComments((prev) =>
+        prev.map((comment) =>
+          comment._id === commentId
+            ? { ...comment, replies: [...(comment.replies || []), newReply] }
+            : comment
+        )
+      );
+    }
+  };
+
+  const handleFloatingButtonClick = () => {
+    if (!showCommentsSection) {
+      setShowCommentsSection(true);
+      fetchComments();
+    } else {
+      setShowCommentModal(true);
+    }
+  };
+
   useEffect(() => {
     if (url) {
       fetchContent();
@@ -115,6 +569,12 @@ export default function NewsDetail() {
   const handleRetry = () => {
     setRetryCount(0);
     fetchContent();
+  };
+
+  const getTotalCommentCount = () => {
+    return comments.reduce((total, comment) => {
+      return total + 1 + (comment.replies ? comment.replies.length : 0);
+    }, 0);
   };
 
   if (loading) {
@@ -392,6 +852,68 @@ export default function NewsDetail() {
           </article>
         </div>
 
+        {/* Comments Section */}
+        {showCommentsSection && (
+          <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8">
+            <div className="bg-gradient-to-r from-green-500 to-green-600 px-6 py-4">
+              <div className="flex items-center justify-between text-white">
+                <div className="flex items-center">
+                  <svg
+                    className="h-5 w-5 mr-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                    />
+                  </svg>
+                  <h3 className="font-semibold">
+                    Komentar ({getTotalCommentCount()})
+                  </h3>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setShowCommentModal(true)}
+                    className="bg-white bg-opacity-20 hover:bg-opacity-30 px-3 py-1 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Tulis Komentar
+                  </button>
+                  <button
+                    onClick={() => setShowCommentsSection(false)}
+                    className="text-white hover:text-gray-200 transition-colors"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <CommentsSection
+                comments={comments}
+                onReply={handleReply}
+                isLoading={commentsLoading}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Enhanced footer with source link */}
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
           <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
@@ -496,6 +1018,20 @@ export default function NewsDetail() {
           </div>
         </div>
       </div>
+
+      {/* Floating Comment Button */}
+      <FloatingCommentButton
+        onClick={handleFloatingButtonClick}
+        commentCount={getTotalCommentCount()}
+      />
+
+      {/* Comment Modal */}
+      <CommentModal
+        isOpen={showCommentModal}
+        onClose={() => setShowCommentModal(false)}
+        onSubmit={handleSubmitComment}
+        articleUrl={url}
+      />
     </div>
   );
 }
