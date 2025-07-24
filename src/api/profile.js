@@ -34,12 +34,33 @@ const changePassword = async (token, passwordData) => {
   const config = {
     headers: {
       Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
     },
   };
 
+  // Kirim oldPassword dan newPassword ke backend
   const response = await axios.post(
     `${API_BASE}/change-password`,
     passwordData,
+    config
+  );
+  return response.data;
+};
+
+const updateProfileImage = async (token, imageFile) => {
+  const formData = new FormData();
+  formData.append("image", imageFile);
+
+  const config = {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "multipart/form-data",
+    },
+  };
+
+  const response = await axios.patch(
+    `${API_BASE}/profile/image`, // Updated endpoint
+    formData,
     config
   );
   return response.data;
@@ -49,4 +70,5 @@ export default {
   getProfile,
   updateProfile,
   changePassword,
+  updateProfileImage,
 };

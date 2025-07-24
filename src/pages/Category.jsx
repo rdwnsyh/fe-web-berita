@@ -19,7 +19,7 @@ export default function Category() {
     olahraga: "Olahraga",
     teknologi: "Teknologi",
     hiburan: "Hiburan",
-    gayahidup: "Gaya Hidup",
+    "gaya-hidup": "Gaya Hidup", // gunakan strip!
   };
 
   // Fungsi untuk fetch berita berdasarkan kategori
@@ -35,11 +35,9 @@ export default function Category() {
 
       // Validasi struktur response
       if (response && response.data) {
-        const newsData = response.data.data || response.data || [];
-        console.log("News data:", newsData);
+        const newsData = response.data.articles || [];
         setNewsList(Array.isArray(newsData) ? newsData : []);
       } else {
-        console.warn("Invalid response structure:", response);
         setNewsList([]);
       }
     } catch (err) {
@@ -276,12 +274,19 @@ export default function Category() {
                 <div className="aspect-video bg-gray-200 relative overflow-hidden">
                   {item.image ? (
                     <img
-                      src={item.image}
+                      src={
+                        (item.image &&
+                          typeof item.image === "object" &&
+                          item.image.small) ||
+                        (typeof item.image === "string" && item.image) ||
+                        "/no-image.png"
+                      }
                       alt={item.title || "Gambar berita"}
                       className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                       onError={(e) => {
                         e.target.style.display = "none";
-                        e.target.nextElementSibling.style.display = "flex";
+                        e.target.nextElementSibling &&
+                          (e.target.nextElementSibling.style.display = "flex");
                       }}
                     />
                   ) : null}
