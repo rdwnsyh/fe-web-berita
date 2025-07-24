@@ -25,6 +25,7 @@ import {
   EnvelopeIcon,
   ShieldCheckIcon,
 } from "@heroicons/react/24/outline";
+import profileApi from "../api/profile"; // Pastikan path sesuai strukturmu
 
 const Profile = () => {
   const [userData, setUserData] = useState({
@@ -57,56 +58,28 @@ const Profile = () => {
       setLoading(true);
       try {
         const token = localStorage.getItem("token");
+
         if (!token) {
           navigate("/login");
           return;
         }
 
-        console.log("Mengambil data profil..."); // Debug log
-        const response = await axios.get(
-          "http://localhost:5000/api/user/profile",
-          {
-            // TAMBAH BASE URL
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const response = await profileApi.getProfile(token);
 
-        console.log("Response dari API:", response); // Debug log
+        if (response.user) {
+          const user = response.user;
 
-        if (response.data && response.data.success && response.data.user) {
-          const user = response.data.user;
-          console.log("Data user diterima:", user); // Debug log
           setUserData({
             username: user.username || user.email.split("@")[0],
             email: user.email,
             displayName: user.displayName || user.username,
             isEmailVerified: user.isEmailVerified || false,
-            photoUrl: user.photoUrl || "",
           });
         } else {
-          console.error("Format respons tidak valid:", response.data);
           setError("Format data dari server tidak valid");
         }
-      } catch (error) {
-        console.error("Error saat mengambil profil:", {
-          message: error.message,
-          response: error.response,
-        });
-
-        let errorMessage = "Gagal memuat profil";
-        if (error.response) {
-          if (error.response.status === 401) {
-            errorMessage = "Sesi telah berakhir, silakan login kembali";
-            localStorage.removeItem("token");
-            navigate("/login");
-          } else if (error.response.data?.message) {
-            errorMessage = error.response.data.message;
-          }
-        }
-
-        setError(errorMessage);
+      } catch (err) {
+        setError("Gagal memuat profil");
       } finally {
         setLoading(false);
       }
