@@ -210,17 +210,46 @@ const Comment = ({ comment, user, onReply, articleUrl }) => {
     }
   };
 
+  // ✅ FIXED: Improved formatDate function with better error handling
   const formatDate = (dateString) => {
     if (!dateString) return "Baru saja";
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return "Baru saja";
-    return date.toLocaleString("id-ID", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    
+    try {
+      // Handle different date formats that might come from the server
+      let date;
+      
+      // If it's already a Date object
+      if (dateString instanceof Date) {
+        date = dateString;
+      }
+      // If it's a timestamp string or number
+      else if (!isNaN(dateString) && !isNaN(parseFloat(dateString))) {
+        date = new Date(parseInt(dateString));
+      }
+      // If it's an ISO string or other date string
+      else {
+        date = new Date(dateString);
+      }
+      
+      // Check if the date is valid
+      if (isNaN(date.getTime())) {
+        console.warn('Invalid date received:', dateString);
+        return "Baru saja";
+      }
+      
+      // Format the date
+      return date.toLocaleString("id-ID", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "Asia/Jakarta" // Add timezone for consistency
+      });
+    } catch (error) {
+      console.error('Error formatting date:', error, 'Date string:', dateString);
+      return "Baru saja";
+    }
   };
 
   return (
@@ -239,98 +268,94 @@ const Comment = ({ comment, user, onReply, articleUrl }) => {
             </div>
           )}
         </div>
-        <span className="font-medium text-gray-900 text-sm">
-          {comment.user && (comment.user.displayName || comment.user.name || comment.user.username || comment.user.email) ?
-            (comment.user.displayName || comment.user.name || comment.user.username || comment.user.email)
-            : "Anonymous"}
-        </span>
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center space-x-2 mb-1">
-          <span className="font-medium text-gray-900 text-sm">
-            {comment.user && (comment.user.displayName || comment.user.name || comment.user.username || comment.user.email) ?
-              (comment.user.displayName || comment.user.name || comment.user.username || comment.user.email)
-              : "Anonymous"}
-          </span>
-          <div className="flex items-center text-gray-500 text-xs">
-            <Clock size={12} className="mr-1" />
-            {formatDate(comment.createdAt)}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center space-x-2 mb-1">
+            <span className="font-medium text-gray-900 text-sm">
+              {comment.user && (comment.user.displayName || comment.user.name || comment.user.username || comment.user.email) ?
+                (comment.user.displayName || comment.user.name || comment.user.username || comment.user.email)
+                : "Anonymous"}
+            </span>
+            <div className="flex items-center text-gray-500 text-xs">
+              <Clock size={12} className="mr-1" />
+              {formatDate(comment.createdAt || comment.timestamp)}
+            </div>
           </div>
-        </div>
 
-        <p className="text-gray-700 text-sm leading-relaxed mb-2">
-          {comment.text}
-        </p>
+          <p className="text-gray-700 text-sm leading-relaxed mb-2">
+            {comment.text}
+          </p>
 
-        <div className="flex items-center space-x-4 text-xs">
-          <button
-            onClick={() => setShowReplyForm(!showReplyForm)}
-            className="flex items-center text-gray-500 hover:text-blue-600 transition-colors"
-          >
-            <Reply size={12} className="mr-1" />
-            Balas
-          </button>
-          {comment.user?.email === user?.email && (
+          <div className="flex items-center space-x-4 text-xs">
             <button
-              onClick={handleDelete}
-              className="flex items-center text-gray-500 hover:text-red-600 transition-colors"
+              onClick={() => setShowReplyForm(!showReplyForm)}
+              className="flex items-center text-gray-500 hover:text-blue-600 transition-colors"
             >
-              Hapus
+              <Reply size={12} className="mr-1" />
+              Balas
             </button>
+            {comment.user?.email === user?.email && (
+              <button
+                onClick={handleDelete}
+                className="flex items-center text-gray-500 hover:text-red-600 transition-colors"
+              >
+                Hapus
+              </button>
+            )}
+          </div>
+
+          {showReplyForm && (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleReply();
+              }}
+              className="mt-3 bg-gray-50 rounded-lg p-3"
+            >
+              <textarea
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                placeholder="Tulis balasan..."
+                className="w-full p-2 border border-gray-200 rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                rows={2}
+              />
+              <div className="flex justify-end space-x-2 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowReplyForm(false)}
+                  className="px-3 py-1 text-xs text-gray-600 hover:text-gray-800"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading || !replyText.trim()}
+                  className="px-3 py-1 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                >
+                  {loading ? (
+                    <div className="animate-spin rounded-full h-3 w-3 border border-white border-t-transparent mr-1" />
+                  ) : (
+                    <Send size={10} className="mr-1" />
+                  )}
+                  Kirim
+                </button>
+              </div>
+            </form>
+          )}
+
+          {comment.replies && comment.replies.length > 0 && (
+            <div className="mt-3 pl-4 border-l-2 border-gray-100 space-y-3">
+              {comment.replies.map((reply) => (
+                <Comment
+                  key={reply._id}
+                  comment={reply}
+                  user={user}
+                  onReply={() => onReply && onReply(articleUrl)}
+                  articleUrl={articleUrl}
+                />
+              ))}
+            </div>
           )}
         </div>
-
-        {showReplyForm && (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleReply();
-            }}
-            className="mt-3 bg-gray-50 rounded-lg p-3"
-          >
-            <textarea
-              value={replyText}
-              onChange={(e) => setReplyText(e.target.value)}
-              placeholder="Tulis balasan..."
-              className="w-full p-2 border border-gray-200 rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              rows={2}
-            />
-            <div className="flex justify-end space-x-2 mt-2">
-              <button
-                type="button"
-                onClick={() => setShowReplyForm(false)}
-                className="px-3 py-1 text-xs text-gray-600 hover:text-gray-800"
-              >
-                Batal
-              </button>
-              <button
-                type="submit"
-                disabled={loading || !replyText.trim()}
-                className="px-3 py-1 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-              >
-                {loading ? (
-                  <div className="animate-spin rounded-full h-3 w-3 border border-white border-t-transparent mr-1" />
-                ) : (
-                  <Send size={10} className="mr-1" />
-                )}
-                Kirim
-              </button>
-            </div>
-          </form>
-        )}
-
-        {comment.replies && comment.replies.length > 0 && (
-          <div className="mt-3 pl-4 border-l-2 border-gray-100 space-y-3">
-            {comment.replies.map((reply) => (
-              <Comment
-                key={reply._id}
-                comment={reply}
-                onReply={() => onReply && onReply(articleUrl)}
-                articleUrl={articleUrl}
-              />
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
@@ -475,8 +500,6 @@ const CommentSection = ({ articleUrl }) => {
       {/* Comment Panel */}
       {isOpen && (
         <div className="fixed inset-0 z-50 overflow-hidden">
-          {/* Backdrop dihapus agar tidak ada efek gelap di pinggir */}
-
           {/* Panel */}
           <div className="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-xl transform transition-transform">
             {/* Header */}
@@ -497,27 +520,6 @@ const CommentSection = ({ articleUrl }) => {
             <div className="flex flex-col h-full">
               {/* Comment Form */}
               <div className="p-4 border-b border-gray-200">
-                {/* Debug Info - Remove this in production */}
-                {window.location.hostname === "localhost" && (
-                  <div className="mb-4 p-2 bg-yellow-100 border border-yellow-300 rounded text-xs">
-                    <div>
-                      <strong>Debug Info:</strong>
-                    </div>
-                    <div>User object: {JSON.stringify(user)}</div>
-                    <div>
-                      User ID:{" "}
-                      {user?._id ||
-                        user?.id ||
-                        user?.user ||
-                        user?.userId ||
-                        user?.username ||
-                        user?.email ||
-                        "Not found"}
-                    </div>
-                    <div>LocalStorage user: {localStorage.getItem("user")}</div>
-                  </div>
-                )}
-
                 {user &&
                 (user._id ||
                   user.id ||
@@ -628,7 +630,7 @@ const CommentSection = ({ articleUrl }) => {
                       <Comment
                         key={comment._id}
                         comment={comment}
-                        user={user} // tambahkan ini!
+                        user={user}
                         onReply={() => loadComments(articleUrl)}
                         articleUrl={articleUrl}
                       />
