@@ -19,6 +19,32 @@ export default function Home() {
   const [currentPage, setCurrentPage] = useState(1);
   const [articlesPerPage] = useState(9);
 
+  // Format tanggal ke bahasa Indonesia
+  const formatDate = (dateString) => {
+    if (!dateString) return "Tanggal tidak diketahui";
+    
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffTime = Math.abs(now - date);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 1) {
+        return "1 hari yang lalu";
+      } else if (diffDays < 7) {
+        return `${diffDays} hari yang lalu`;
+      } else {
+        return date.toLocaleDateString('id-ID', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric'
+        });
+      }
+    } catch (error) {
+      return "Tanggal tidak valid";
+    }
+  };
+
   // Ambil berita dari backend Express
   useEffect(() => {
     const fetchArticles = async () => {
@@ -183,8 +209,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      {/* Header */}
-
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Trending Section */}
         {trendingArticles.length > 0 && (
@@ -199,7 +223,10 @@ export default function Home() {
             <div className="grid gap-6 lg:grid-cols-3">
               {/* Featured Article */}
               <div className="lg:col-span-2">
-                <div className="group relative bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <Link
+                  to={`/detail?url=${encodeURIComponent(trendingArticles[0].link)}`}
+                  className="group relative bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 block"
+                >
                   <div className="aspect-w-16 aspect-h-9 relative">
                     <img
                       src={
@@ -208,12 +235,12 @@ export default function Home() {
                           trendingArticles[0].image.small) ||
                         (typeof trendingArticles[0].image === "string" &&
                           trendingArticles[0].image) ||
-                        "/no-image.png"
+                        "https://via.placeholder.com/800x400/e5e7eb/6b7280?text=No+Image"
                       }
                       alt={trendingArticles[0].title}
                       className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300"
                       onError={(e) => {
-                        e.target.src = "/no-image.png";
+                        e.target.src = "https://via.placeholder.com/800x400/e5e7eb/6b7280?text=No+Image";
                       }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
@@ -229,19 +256,14 @@ export default function Home() {
                     </h2>
                     <p className="text-gray-600 text-sm mb-2 flex items-center">
                       <ClockIcon className="w-4 h-4 mr-1" />
-                      {trendingArticles[0].pubDate || "Tanggal tidak diketahui"}
+                      {formatDate(trendingArticles[0].pubDate)}
                     </p>
                     {trendingArticles[0].contentSnippet && (
                       <p className="text-gray-700 text-sm mb-4 line-clamp-3">
                         {trendingArticles[0].contentSnippet}
                       </p>
                     )}
-                    <Link
-                      to={`/detail?url=${encodeURIComponent(
-                        trendingArticles[0].link
-                      )}`}
-                      className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium group-hover:underline"
-                    >
+                    <div className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium group-hover:underline">
                       Baca Selengkapnya
                       <svg
                         className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform"
@@ -256,39 +278,53 @@ export default function Home() {
                           d="M17 8l4 4m0 0l-4 4m4-4H3"
                         />
                       </svg>
-                    </Link>
+                    </div>
                   </div>
-                </div>
+                </Link>
               </div>
 
               {/* Trending List */}
               <div className="space-y-4">
                 {trendingArticles.slice(1, 5).map((article, index) => (
-                  <div
+                  <Link
                     key={`trending-${article.link}-${index}`}
-                    className="group bg-white rounded-xl p-4 shadow-md hover:shadow-lg transition-all duration-200 hover:bg-blue-50"
+                    to={`/detail?url=${encodeURIComponent(article.link)}`}
+                    className="group bg-white rounded-xl p-4 shadow-md hover:shadow-lg transition-all duration-200 hover:bg-blue-50 block"
                   >
                     <div className="flex items-start space-x-3">
-                      <div className="bg-gradient-to-r from-orange-400 to-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">
+                      <div className="bg-gradient-to-r from-orange-400 to-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold flex-shrink-0">
                         {index + 2}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-semibold mb-1 line-clamp-2 group-hover:text-blue-600 transition-colors">
-                          {article.title}
-                        </h3>
-                        <p className="text-xs text-gray-500 mb-2 flex items-center">
-                          <EyeIcon className="w-3 h-3 mr-1" />
-                          {article.pubDate || "Tanggal tidak diketahui"}
-                        </p>
-                        <Link
-                          to={`/detail?url=${encodeURIComponent(article.link)}`}
-                          className="text-xs text-blue-600 hover:underline font-medium"
-                        >
-                          Baca →
-                        </Link>
+                      <div className="flex space-x-3 flex-1 min-w-0">
+                        <img
+                          src={
+                            (article.image &&
+                              typeof article.image === "object" &&
+                              article.image.small) ||
+                            (typeof article.image === "string" && article.image) ||
+                            "https://via.placeholder.com/80x60/e5e7eb/6b7280?text=No+Image"
+                          }
+                          alt={article.title}
+                          className="w-16 h-12 object-cover rounded-lg flex-shrink-0"
+                          onError={(e) => {
+                            e.target.src = "https://via.placeholder.com/80x60/e5e7eb/6b7280?text=No+Image";
+                          }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm font-semibold mb-1 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                            {article.title}
+                          </h3>
+                          <p className="text-xs text-gray-500 mb-2 flex items-center">
+                            <ClockIcon className="w-3 h-3 mr-1" />
+                            {formatDate(article.pubDate)}
+                          </p>
+                          <div className="text-xs text-blue-600 hover:underline font-medium">
+                            Baca →
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </div>
@@ -317,12 +353,12 @@ export default function Home() {
                         typeof article.image === "object" &&
                         article.image.small) ||
                       (typeof article.image === "string" && article.image) ||
-                      "/no-image.png"
+                      "https://via.placeholder.com/400x200/e5e7eb/6b7280?text=No+Image"
                     }
                     alt={article.title}
                     className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
                     onError={(e) => {
-                      e.target.src = "/no-image.png";
+                      e.target.src = "https://via.placeholder.com/400x200/e5e7eb/6b7280?text=No+Image";
                     }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -333,7 +369,7 @@ export default function Home() {
                   </h3>
                   <p className="text-gray-500 text-sm mb-3 flex items-center">
                     <ClockIcon className="w-4 h-4 mr-1" />
-                    {article.pubDate || "Tanggal tidak diketahui"}
+                    {formatDate(article.pubDate)}
                   </p>
                   {article.contentSnippet && (
                     <p className="text-gray-600 text-sm mb-4 line-clamp-3">

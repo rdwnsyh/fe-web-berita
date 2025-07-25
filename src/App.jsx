@@ -14,6 +14,7 @@ import UserManagement from "./pages/admin/UserManagement";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import Otp from "./pages/auth/Otp";
+import Trending from "./pages/Trending";
 
 function App() {
   const location = useLocation();
@@ -35,7 +36,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/otp" element={<Otp />} />
-
+        <Route path="/trending" element={<Trending />} />
         {/* 404 Route */}
         <Route path="*" element={<NotFound />} />
       </Routes>
